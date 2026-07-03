@@ -453,6 +453,21 @@ async def public_models():
         ],
     }
 
+@app.get("/api/knowledge")
+async def public_knowledge(request: Request):
+    """Knowledge bases the caller may consult (role-gated via optional staff token)."""
+    role = await resolve_role(request)
+    allowed_levels = rag_store.levels_for_role(role)
+    con = rag_store.connect()
+    try:
+        rag_store.ensure_schema(con)
+        return {"knowledge_bases": rag_store.list_knowledge_bases(con, allowed_levels)}
+    except Exception as e:
+        print(f"Knowledge list failed ({type(e).__name__}): {e}")
+        return {"knowledge_bases": []}
+    finally:
+        con.close()
+
 @app.put("/api/config")
 async def update_config(
     config: TokenBudget,

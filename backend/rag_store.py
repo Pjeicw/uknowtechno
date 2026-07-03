@@ -189,6 +189,32 @@ def kb_id_for_code(con: sqlite3.Connection, code: str) -> Optional[str]:
     return row["id"] if row else None
 
 
+def list_knowledge_bases(
+    con: sqlite3.Connection, allowed_levels: List[str]
+) -> List[Dict[str, str]]:
+    """Knowledge bases with at least one enabled chunk in an allowed access level.
+
+    Returns [{code, label}] where label is a human-friendly Title Case of the code.
+    """
+    if not allowed_levels:
+        allowed_levels = ["public"]
+    placeholders = ",".join("?" for _ in allowed_levels)
+    rows = con.execute(
+        f"""SELECT DISTINCT kb.code AS code
+            FROM knowledge_bases kb
+            JOIN document_chunks dc ON dc.knowledge_base_id = kb.id
+            WHERE dc.is_enabled = 1 AND dc.access_level IN ({placeholders})
+            ORDER BY kb.code""",
+        tuple(allowed_levels),
+    ).fetchall()
+    out = []
+    for r in rows:
+        code = r["code"]
+        label = code.replace("_", " ").replace("-", " ").title()
+        out.append({"code": code, "label": label})
+    return out
+
+
 # --- Ingestion ---------------------------------------------------------------
 def create_document(
     con: sqlite3.Connection,
