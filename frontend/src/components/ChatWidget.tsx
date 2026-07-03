@@ -10,6 +10,9 @@ type Thread = { id: string; title: string; messages: Message[] };
 
 // Central API base — override with VITE_API_BASE in production (e.g. https://api.uknowtechno.com)
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000';
+// PocketBase (admin login straight from the chat settings)
+const POCKETBASE_URL = (import.meta as any).env?.VITE_POCKETBASE_URL || 'http://localhost:8090';
+const PB_COLLECTION = (import.meta as any).env?.VITE_POCKETBASE_COLLECTION || '_superusers';
 // How long to wait for the backend to START responding before treating it as offline.
 const CONNECT_TIMEOUT_MS = 15000;
 
@@ -42,6 +45,14 @@ export default function ChatWidget() {
   const [selectedKbs, setSelectedKbs] = useState<string[]>([]);
   const toggleKb = (code: string) =>
     setSelectedKbs((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+
+  // Admin login (revealed on click inside AI settings)
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminDevToken, setAdminDevToken] = useState('');
+  const [adminError, setAdminError] = useState('');
+  const [adminBusy, setAdminBusy] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -86,6 +97,36 @@ export default function ChatWidget() {
       }
     } catch { /* offline: keep defaults */ }
   }, []);
+
+  // Save the token so the /admin page opens already authenticated, then go there.
+  const openAdmin = (token: string) => {
+    localStorage.setItem('admin_token', token);
+    window.location.href = '/admin';
+  };
+
+  const handleAdminLogin = async () => {
+    setAdminError('');
+    setAdminBusy(true);
+    try {
+      const res = await fetch(`${POCKETBASE_URL}/api/collections/${PB_COLLECTION}/auth-with-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: adminEmail, password: adminPassword }),
+      });
+      if (!res.ok) throw new Error('Invalid credentials');
+      const data = await res.json();
+      if (!data.token) throw new Error('No token returned');
+      openAdmin(data.token);
+    } catch (err) {
+      setAdminError((err as Error).message || 'Login failed');
+    } finally {
+      setAdminBusy(false);
+    }
+  };
+
+  const handleDevAdminLogin = () => {
+    if (adminDevToken.trim()) openAdmin(adminDevToken.trim());
+  };
 
   const handleOpenSettings = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -458,9 +499,61 @@ export default function ChatWidget() {
                                 )}
                               </div>
                             </div>
-                            <a href="/admin" className="flex items-center justify-center w-full bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] hover:bg-[var(--accent-cyan)]/20 border border-[var(--accent-cyan)]/30 transition-all py-2 rounded-lg text-xs font-medium">
-                              Open admin panel
-                            </a>
+                            <div className="border-t border-[#1e293b] pt-3">
+                              <button
+                                type="button"
+                                onClick={() => setShowAdminLogin((s) => !s)}
+                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-[var(--accent-cyan)] transition-colors"
+                              >
+                                <span>{showAdminLogin ? '▾' : '▸'}</span> Admin login
+                              </button>
+                              {showAdminLogin && (
+                                <div className="mt-2 flex flex-col gap-2">
+                                  <input
+                                    type="email"
+                                    value={adminEmail}
+                                    onChange={(e) => setAdminEmail(e.target.value)}
+                                    placeholder="admin@uknowtechno.com"
+                                    className="h-9 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
+                                  />
+                                  <input
+                                    type="password"
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
+                                    placeholder="Password"
+                                    className="h-9 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
+                                  />
+                                  {adminError && <div className="text-xs text-red-400">{adminError}</div>}
+                                  <button
+                                    type="button"
+                                    onClick={handleAdminLogin}
+                                    disabled={adminBusy}
+                                    className="h-9 bg-[var(--accent-cyan)] text-[#0a192f] rounded-lg text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all"
+                                  >
+                                    {adminBusy ? 'Signing in…' : 'Log in and open admin'}
+                                  </button>
+                                  <div className="flex gap-2 pt-1">
+                                    <input
+                                      type="password"
+                                      value={adminDevToken}
+                                      onChange={(e) => setAdminDevToken(e.target.value)}
+                                      onKeyDown={(e) => e.key === 'Enter' && handleDevAdminLogin()}
+                                      placeholder="Local dev token"
+                                      className="flex-1 h-8 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-xs outline-none focus:border-[var(--accent-cyan)]"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={handleDevAdminLogin}
+                                      className="px-3 h-8 bg-[#1e293b] text-[var(--accent-cyan)] rounded-lg text-xs font-medium hover:bg-[#243044] transition-all"
+                                    >
+                                      Enter
+                                    </button>
+                                  </div>
+                                  <div className="text-[11px] text-gray-500">Opens the admin page after login.</div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </motion.div>
                       )}

@@ -174,6 +174,15 @@ export default function AdminPanel() {
     } catch { /* offline */ }
   }, [authFetch, searchTerm]);
 
+  // If the chat's admin login saved a token, start already authenticated.
+  useEffect(() => {
+    const saved = localStorage.getItem('admin_token');
+    if (saved) {
+      setToken(saved);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) return;
     loadConfig();
@@ -384,7 +393,7 @@ export default function AdminPanel() {
           <Database size={22} /> {t('adminKnowledge')} </button>
 
         <div className="mt-auto">
-          <button onClick={() => { setIsAuthenticated(false); setToken(''); }} className="flex w-full items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[#0a192f] border border-red-500/30 hover:shadow-[0_0_20px_rgba(248,113,113,0.5)] mt-4">
+          <button onClick={() => { setIsAuthenticated(false); setToken(''); localStorage.removeItem('admin_token'); }} className="flex w-full items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[#0a192f] border border-red-500/30 hover:shadow-[0_0_20px_rgba(248,113,113,0.5)] mt-4">
             <LogOut size={22} /> {t('adminSignOut')} </button>
         </div>
       </div>
