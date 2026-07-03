@@ -263,6 +263,23 @@ def build_fallback_chain(cfg: dict, con, want_smart: bool = False) -> list:
     return ordered or ["ollama-local"]
 
 
+def resolve_model_choice(model_choice: Optional[str]):
+    """Map a visitor's model pick to (forced_first, local_pref, blocked).
+
+    `blocked=True` means the choice is not allowed from the public chat yet
+    (OpenAI needs a password unlock — a later feature). 'auto'/empty = no
+    override. 'deepseek' forces the cloud default first. Anything else is
+    treated as a specific local Ollama model id.
+    """
+    if not model_choice or model_choice == "auto":
+        return (None, None, False)
+    if model_choice == "openai":
+        return (None, None, True)
+    if model_choice == "deepseek":
+        return ("deepseek", None, False)
+    return ("ollama-local", model_choice, False)
+
+
 async def resolve_client(target_model: str, local_model_pref: str = None):
     """Return (client, model_name, provider) for a model, probing Ollama for a
     live local model. Raises if the tier is unavailable so the caller advances."""
