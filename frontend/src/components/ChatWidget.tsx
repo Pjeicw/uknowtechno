@@ -475,7 +475,7 @@ export default function ChatWidget() {
                   <button onClick={() => setShowSidebar(!showSidebar)} className="text-[var(--accent-cyan)] hover:text-white transition-colors p-2 hover:bg-[var(--accent-cyan)]/10 rounded-lg" title={t('chatToggleSidebar')}>
                     {showSidebar ? <PanelLeftClose size={20} /> : <PanelLeft size={20} />}
                   </button>
-                  <h3 className="text-white font-black tracking-widest flex items-center gap-3 text-lg">
+                  <h3 className="text-white font-medium tracking-normal flex items-center gap-3 text-base">
                     <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${activeModelConfig === 'Offline' ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]' : activeModelConfig.includes('Fallback') ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,1)]' : 'bg-[var(--accent-cyan)] shadow-[0_0_10px_var(--accent-cyan)]'}`}></span>
                     {t('chatAIEngine')}
                   </h3>
@@ -596,7 +596,7 @@ export default function ChatWidget() {
 
               {/* Input Area */}
               <div className="p-4 md:p-6 bg-[#0a192f]/80 backdrop-blur-md border-t border-[#1e293b]">
-                <form onSubmit={handleSubmit} className="relative flex flex-col gap-2 bg-[#0f172a]/90 backdrop-blur border border-[#1e293b] hover:border-[var(--accent-cyan)]/30 rounded-2xl p-2 focus-within:border-[var(--accent-cyan)]/60 focus-within:shadow-[0_0_20px_rgba(100,255,218,0.1)] transition-all shadow-xl">
+                <form onSubmit={handleSubmit} className="relative flex flex-col gap-2 bg-[#0f172a]/90 backdrop-blur border border-[#1e293b] hover:border-[var(--accent-cyan)]/30 rounded-2xl p-2 focus-within:border-[var(--accent-cyan)]/60 transition-all">
                   {/* Attachments Display Area */}
                   {attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 px-3 pt-2">
@@ -648,7 +648,7 @@ export default function ChatWidget() {
                     <button 
                       type="submit" 
                       disabled={(!input.trim() && attachments.length === 0) || isTyping} 
-                      className="p-3 mb-1 mr-1 bg-[var(--accent-cyan)] text-[#0A192F] rounded-xl hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all font-black shadow-md shadow-[var(--accent-cyan)]/30"
+                      className="p-3 mb-1 mr-1 bg-[var(--accent-cyan)] text-[#0A192F] rounded-xl hover:brightness-110 disabled:opacity-50 transition-all font-medium"
                     >
                       <Send size={20} />
                     </button>
@@ -666,7 +666,7 @@ export default function ChatWidget() {
       {!isOpen && !isFullScreen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="absolute bottom-0 right-0 w-16 h-16 bg-[var(--accent-cyan)] rounded-2xl flex items-center justify-center text-[#0A192F] shadow-[0_0_20px_rgba(100,255,218,0.4)] hover:scale-110 hover:shadow-[0_0_30px_rgba(100,255,218,0.6)] transition-all z-50 overflow-hidden relative group"
+          className="absolute bottom-0 right-0 w-16 h-16 bg-[var(--accent-cyan)] rounded-2xl flex items-center justify-center text-[#0A192F] shadow-[0_0_12px_rgba(100,255,218,0.25)] hover:scale-105 transition-all z-50 overflow-hidden relative group"
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
           <span className="ai-text-3d flex items-center justify-center">
