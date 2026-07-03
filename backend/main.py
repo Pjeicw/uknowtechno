@@ -429,6 +429,30 @@ async def get_config():
             return {"status": "fallback", "model": "Ollama", "actual": "deepseek", "reason": reason_str}
     return {"status": "online", "model": state}
 
+@app.get("/api/models")
+async def public_models():
+    """Public model list for the chat picker: default + live Ollama + cloud tiers.
+
+    OpenAI is returned locked (requires a password unlock, enforced server-side).
+    """
+    installed, online = [], False
+    try:
+        models = await asyncio.wait_for(ollama_client.models.list(), timeout=3.0)
+        installed = [m.id for m in models.data]
+        online = True
+    except Exception:
+        pass
+    cfg = load_config()
+    return {
+        "default": cfg.get("active_model", "deepseek"),
+        "ollama_online": online,
+        "ollama_models": installed,
+        "cloud": [
+            {"id": "deepseek", "label": "DeepSeek", "locked": False},
+            {"id": "openai", "label": "OpenAI GPT-4o", "locked": True},
+        ],
+    }
+
 @app.put("/api/config")
 async def update_config(
     config: TokenBudget,
