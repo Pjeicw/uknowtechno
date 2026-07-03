@@ -346,65 +346,7 @@ export default function ChatWidget() {
             className={containerClasses}
             style={containerStyle}
           >
-            {/* Old floating popover disabled — routing status now lives in the sidebar below. */}
-            <AnimatePresence>
-              {false && (
-                <>
-                  <div
-                    className="fixed inset-0 z-[90]"
-                    onClick={() => setShowSettingsModal(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, x: 0, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, x: 0, y: 10 }}
-                    className="absolute bottom-20 left-4 w-80 bg-[#0a192f]/95 backdrop-blur-xl border border-[var(--accent-cyan)]/40 rounded-2xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.9)] z-[100] overflow-hidden"
-                  >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent-cyan)] to-transparent opacity-50"></div>
-                    
-                    <div className="flex justify-between items-start mb-5">
-                      <h4 className={`font-black text-sm tracking-widest flex items-center gap-2 ${activeModelConfig === 'Offline' ? 'text-red-400' : activeModelConfig.includes('Fallback') ? 'text-yellow-400' : 'text-[var(--accent-cyan)]'}`}>
-                        <span className={`w-2 h-2 rounded-full animate-pulse ${activeModelConfig === 'Offline' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]' : activeModelConfig.includes('Fallback') ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,1)]' : 'bg-[var(--accent-cyan)] shadow-[0_0_8px_var(--accent-cyan)]'}`}></span>
-                        AI ROUTING STATUS
-                      </h4>
-                      <button onClick={(e) => { e.stopPropagation(); setShowSettingsModal(false); }} className="text-gray-500 hover:text-white bg-[#1e293b]/50 p-1 rounded-full transition-colors"><X size={16} /></button>
-                    </div>
-                    
-                    <div className="mb-6 bg-[#112240] p-4 rounded-xl border border-[#1e293b] shadow-inner">
-                      <div className="text-xs text-gray-500 font-bold tracking-widest mb-2 uppercase">Currently Active Engine</div>
-                      <div className="text-lg text-white font-black capitalize flex items-center gap-3 break-words whitespace-normal">
-                        {activeModelConfig.replace('-', ' ')}
-                      </div>
-                      {fallbackReason && (
-                        <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
-                          <div className="text-[10px] text-red-400 font-black mb-1 uppercase tracking-widest">Root Cause:</div>
-                          <div className="text-xs text-gray-300 font-mono break-all mb-3 bg-[#0a192f] p-2 rounded border border-[#1e293b]">{fallbackReason}</div>
-                          <button 
-                            onClick={handleRetry} 
-                            disabled={isRetrying}
-                            className={`w-full flex justify-center items-center gap-2 text-xs font-black py-2 rounded-md transition-all uppercase tracking-widest border ${isRetrying ? 'bg-yellow-500/5 text-yellow-600 border-yellow-500/10 cursor-not-allowed' : 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 hover:text-yellow-400 border-yellow-500/20'}`}
-                          >
-                            {isRetrying ? (
-                              <><div className="w-3 h-3 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div> Retrying...</>
-                            ) : (
-                              "Retry Local Connection"
-                            )}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <p className="text-xs text-gray-400 mb-6 leading-relaxed">
-                      The system is currently routing your chat requests to this model. You can override the AI engine or adjust limits in the Administration panel.
-                    </p>
-                    
-                    <a href="/admin" className="group flex items-center justify-center w-full bg-[var(--accent-cyan)] text-[#0a192f] border border-[var(--accent-cyan)] hover:shadow-[0_0_20px_rgba(100,255,218,0.4)] transition-all py-3 rounded-xl text-sm font-black tracking-widest">
-                      OPEN ADMIN PANEL
-                    </a>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+            {/* AI routing status lives in the sidebar footer (see below). */}
 
             {/* Sidebar (History) */}
             <AnimatePresence>
