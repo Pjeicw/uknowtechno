@@ -1,0 +1,128 @@
+This is a brilliant expansion of your system architecture. By utilizing Coolify and PocketBase, you already have a fantastic, modern self-hosted foundation. Bringing in Multi-Modal inputs (images, files, voice), an encrypted Admin Panel, and strict Token Budgeting transforms your portfolio into an enterprise-grade AI application.
+When architecting a system to gracefully handle real-world hazards—like home power outages, internet drops, or malicious exploit attempts—resilience must be engineered directly into the design. Here is the complete production blueprint to build, optimize, and fortify your system on uknowtechno.com.
+1. The Advanced Hybrid Architecture
+To support these advanced features while remaining secure, we will separate your system into three distinct isolation zones: The Global Edge (Cloudflare), The Data & Auth Control Plane (PocketBase), and The Compute Engine (Your Mac Mini + ASUS via Coolify).
+[ Visitor Browser ] ??(HTTPS)??> [ Cloudflare Edge / Pages Frontend ]
+                                            ?
+                                  (Cloudflare Tunnel)
+                                            ?
+                                            ?
+                              [ Mac Mini / Coolify Gateway ]
+                               ?             ?             ?
+                               ?             ?             ?
+                         [PocketBase]   [FastAPI App]   [Qdrant Vector DB]
+                         (Auth/Logs)    (AI & RAG Core)   (Local Storage)
+                                             ?
+                                             ?
+                                    [Local Ollama Node]
+Component Breakdown & Enhancements
+* Frontend (Cloudflare Pages): Hosts the public interface. If your home server loses power, Cloudflare remains online globally, displaying your portfolio and a graceful offline message for the chatbot.
+* Orchestration (Coolify on Mac Mini): Manages your application lifecycle. You will deploy three lightweight dockerized services through Coolify: PocketBase, an AI Core Engine, and a dedicated Vector Database.
+* Database & Auth (PocketBase): Handles your administrative accounts, saves system configurations (like the current active AI model), stores chat metadata, and increments token counters.
+* Vector Database (Qdrant or Chroma): A dedicated vector instance deployed via Coolify. This is far more performant for document chunk searches than forcing vector arrays into a relational engine.
+* AI Core Engine (Python FastAPI): A lightweight custom backend service that bridges everything together. It processes incoming multi-modal requests, handles document file extraction, calculates token metrics, and securely attaches cloud API keys away from the client browser.
+2. Multi-Modal RAG Processing Pipeline
+To parse complex documents (PDF, Word, Excel, Markdown) and allow your chat interface to process images or voice notes, your FastAPI backend handles ingestion using a structured file pipeline.
+File Upload (Admin Only) ??> Extract Text/Metadata ??> Chunk Text ??> Generate Embeddings ??> Save to Vector DB
+Detailed Feature Implementation
+* Document Extraction Engines:
+o PDF: pypdf or pdfplumber to extract structured data text.
+o Word (.docx): python-docx to read structural paragraphs.
+o Excel (.xlsx): pandas or openpyxl to convert rows and tabular cells into cleanly structured Markdown tables before chunking.
+o Markdown: Native text chunking split by header elements (#, ##).
+* Multi-Modal Pipeline Handling:
+o Images: When a user uploads an image, the backend routes the file directly to your cloud endpoints (ChatGPT/DeepSeek vision models) or passes it locally to a vision-capable instance on Ollama (like llava or qwen2.5-vl).
+o Voice-to-Text: The client records audio using the standard browser MediaRecorder API, encoding it to a lightweight format like .webm or .mp3. The backend transcribes it using an open-source model like openai-whisper-compact running inside your local container stack.
+* Rich Text Rendering: Ensure your frontend chatbot library uses a robust markdown parser (such as markdown-it or marked.js) bundled with plug-ins for tables and code syntax highlighting. This allows structural components like tables, bold font styles, and list bullet formatting to display natively.
+3. Admin Governance & Token Budgeting
+The Admin panel lets you safely shift system parameters dynamically without redeploying code.
+Admin Auth (PocketBase) ??> Toggle App State ??> Update App Settings DB ??> FastAPI Adapts Instantly
+State Management & Security Matrix
+User RoleDashboard AccessAI Routing CapabilitiesStorage Operations AllowedAnonymous VisitorPublic Portfolio ViewLocal Ollama (Qwen 3.8B) DefaultNone (Read-Only UI)Authenticated AdminProtected Panel (/admin)Swaps between Ollama, DeepSeek, and ChatGPTFull CRUD control over documents and RAG storesToken Quota Protection Rules
+To prevent unexpected credit drainage on your paid cloud accounts from excessive visitor use, implement a hard token gateway inside your FastAPI middleware:
+Python
+# Conceptual Python token enforcement check inside the API gateway
+def verify_token_budget(requested_model, estimated_tokens):
+    if requested_model in ["openai", "deepseek"]:
+        current_monthly_spend = pocketbase.get_current_spend()
+        max_monthly_budget = pocketbase.get_admin_budget_limit()
+        
+        if current_monthly_spend + estimated_tokens >= max_monthly_budget:
+            # Enforce automatic fallback behavior to protect your wallet
+            return "ollama-local" 
+    return requested_model
+Every time a cloud model interaction finishes, parse the usage metadata block returned from the vendor API, compute the actual financial cost, and add it directly to a rolling monthly transaction monitor table inside PocketBase.
+4. Advanced Disaster Recovery & Resilience Protocol
+An optimized infrastructure assumes things will fail and designs components to recover gracefully when they do.
+Threat Modeling & Failover Runbook
+    [ Detection Layer ]
+             ?
+             ???> Mac Mini Power Outage? ??> [ Cloudflare Worker Fallback Mode ] ??> UI Notice Displayed
+             ?
+             ???> Home Internet Offline? ??> [ Tunnel Disconnect Triggers Hook ] ??> Cache Offline App
+Hazard 1: Mac Mini Experiences a Sudden Power Outage
+* The Risk: Your primary computing instance shuts down entirely. Visitors to uknowtechno.com hit a standard browser connection timeout error.
+* The Mitigation Strategy: Configure a custom Cloudflare Worker acting as an intelligent smart reverse-proxy router. If the tunnel connection to your Mac Mini drops for more than three consecutive polling intervals, the worker intercepts incoming requests and redirects them to a secondary static error state view. This lets visitors browse your offline portfolio text seamlessly while disabling the AI window with a clean notification: "Local processing node is temporarily offline for maintenance."
+Hazard 2: Ollama Crashes or Experiences Local Failures
+* The Risk: Your local backend container is online, but the underlying Ollama model service fails to reply to incoming visitor prompts.
+* The Mitigation Strategy: Set up a clean automated health check script inside your FastAPI orchestration routine. If local responses time out, configure the backend loop to automatically fallback to low-cost remote cloud API structures for critical interface requests, or display a gentle throttling reminder to the end-user.
+Hazard 3: Hardware Corruption or Local File System Loss
+* The Risk: A drive failures corrupts your primary vector storage arrays and user authentication configurations.
+* The Mitigation Strategy: Implement automated off-site cloud replication via Cloudflare R2.
+o Create a simple scheduled backup engine cron job inside Coolify that runs nightly.
+o The script creates a clean point-in-time snapshot of your PocketBase database file (pb_data/data.db) and exports your vector index checkpoints.
+o These compressed backup archives are sent directly to your encrypted private Cloudflare R2 bucket storage container with zero transfer egress fees.
+5. Structured Full-Stack Master Implementation Plan
+Execute these phases sequentially to bring the complete hybrid architecture online safely:
+Phase 1: Coolify Service Initialization
+Deploy your companion infrastructure dependencies inside Coolify as separate containers sharing an isolated internal virtual sub-network:
+1. Spin up the official PocketBase Docker image. Initialize your master administrative access credentials immediately.
+2. Spin up Qdrant as your production vector database service. Ensure port mappings remain internal to protect your system ports from public scanning.
+3. Deploy your custom FastAPI AI application workspace container.
+Phase 2: Secure Environment Configuration
+Store all underlying infrastructure parameters securely inside the environment configuration management page of your Coolify controller panel.
+Code snippet
+# Production Environment Variables Blueprint (.env)
+POCKETBASE_URL=http://pocketbase_container:8090
+POCKETBASE_ADMIN_USER=admin@uknowtechno.com
+POCKETBASE_ADMIN_PASSWORD=your_secure_password_here
+
+# Local Processing Node Mapping
+OLLAMA_HOST=http://your_asus_workstation_ip:11434
+VECTOR_DB_URL=http://qdrant_container:6333
+
+# Protected Multi-Modal Cloud Vendor API Integrations
+OPENAI_API_KEY=sk-proj-EncryptedSecretKeyHere...
+DEEPSEEK_API_KEY=sk-ds-EncryptedSecretKeyHere...
+
+# Disaster Recovery Storage Integration
+CLOUDFLARE_R2_BUCKET=uknowtechno-backups
+CLOUDFLARE_R2_ACCESS_KEY=your_r2_access_key
+CLOUDFLARE_R2_SECRET_KEY=your_r2_secret_key
+Phase 3: Frontend Interface Connection
+Update the network request logic inside your portfolio client workspace file (index.html) to pass message state values dynamically through your unified processing endpoints:
+JavaScript
+// Sample Javascript fetch logic pointing to your secure application proxy
+async function sendChatMessage(userText, filesArray) {
+    const formData = new FormData();
+    formData.append("message", userText);
+    
+    // Attach additional file payloads if present
+    if(filesArray.length > 0) {
+        formData.append("file", filesArray[0]);
+    }
+
+    try {
+        const response = await fetch("https://uknowtechno.com/api/chat", {
+            method: "POST",
+            body: formData
+            // The browser session handles authorization naturally via standard cookie headers or tokens
+        });
+        
+        // Process response payload stream cleanly here...
+    } catch (error) {
+        console.error("Connection link failed gracefully:", error);
+    }
+}
+This development model guarantees your API tokens remain safe within your home server environment, prevents user exploitation, and keeps your system resilient against unexpected hardware failures.
+

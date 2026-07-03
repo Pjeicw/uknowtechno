@@ -1,0 +1,12 @@
+name = "uknowtechno-api-router"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# The Worker fronts your API subdomain. Add this route in the Cloudflare
+# dashboard (or here) once the zone is set up:
+# routes = [{ pattern = "api.uknowtechno.com/*", zone_name = "uknowtechno.com" }]
+
+[vars]
+# Where the Worker proxies to when the origin is healthy. Point this at the
+# Cloudflare Tunnel hostname for the Mac Mini reverse proxy.
+ORIGIN_URL = "https://origin.uknowtechno.com"

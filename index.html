@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portfolio of Phengsavanh Phanthavong, a full-stack developer and digital architect specializing in financial systems and modern web technologies.">
+    <meta name="keywords" content="full-stack developer, digital banking, mobile app development, Laos, UknowTechno">
+    <meta name="author" content="Phengsavanh Phanthavong">
+    <title data-en="UknowTechno - Digital Architect" data-th="UknowTechno - สถาปนิกดิจิทัล">UknowTechno - Digital Architect</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg-primary: #0A192F;
+            --bg-secondary: #112240;
+            --text-primary: #CCD6F6;
+            --text-secondary: #8892B0;
+            --accent-cyan: #64FFDA;
+            --glass-bg: rgba(100, 255, 218, 0.05);
+            --glass-border: rgba(100, 255, 218, 0.2);
+        }
+        [data-theme="purple"] {
+            --bg-primary: #1A0D2E;
+            --bg-secondary: #16213E;
+            --text-primary: #E0E6ED;
+            --text-secondary: #98A2B3;
+            --accent-cyan: #8B5FBF;
+            --glass-bg: rgba(139, 95, 191, 0.05);
+            --glass-border: rgba(139, 95, 191, 0.2);
+        }
+        [data-theme="green"] {
+            --bg-primary: #0D1B2A;
+            --bg-secondary: #1B263B;
+            --text-primary: #E0E6ED;
+            --text-secondary: #98A2B3;
+            --accent-cyan: #06D6A0;
+            --glass-bg: rgba(6, 214, 160, 0.05);
+            --glass-border: rgba(6, 214, 160, 0.2);
+        }
+        [data-theme="orange"] {
+            --bg-primary: #2A1810;
+            --bg-secondary: #3B2414;
+            --text-primary: #F4F3EE;
+            --text-secondary: #B8B5A7;
+            --accent-cyan: #FF6B35;
+            --glass-bg: rgba(255, 107, 53, 0.05);
+            --glass-border: rgba(255, 107, 53, 0.2);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            cursor: none;
+            font-feature-settings: 'liga' 1, 'calt' 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+            opacity: 0.03;
+        }
+        .particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+            opacity: 0.03;
+        }
+        .starfield-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -3;
+            opacity: 0.8;
+        }
+        .scan-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(100, 255, 218, 0.01) 2px,
+                rgba(100, 255, 218, 0.01) 4px
+            );
+            pointer-events: none;
+            z-index: -1;
+            animation: scanlines 0.1s linear infinite;
+        }
+        @keyframes scanlines {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(4px); }
+        }
+        .enhanced-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .enhanced-glow::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--accent-cyan), #8B45FF, #FF64DA, var(--accent-cyan));
+            border-radius: inherit;
+            z-index: -1;
+            animation: borderGlow 3s linear infinite;
+        }
+        @keyframes borderGlow {
+            0%, 100% {
+                background: linear-gradient(45deg, var(--accent-cyan), #8B45FF, #FF64DA, var(--accent-cyan));
+            }
+            50% {
+                background: linear-gradient(45deg, #FF64DA, var(--accent-cyan), #8B45FF, #FF64DA);
+            }
+        }
+        .holo-text {
+            background: linear-gradient(45deg, var(--accent-cyan), #8B45FF, #FF64DA);
+            background-size: 300% 300%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: holoShift 3s ease-in-out infinite;
+        }
+        @keyframes holoShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .neural-network {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+            opacity: 0.1;
+        }
+        .data-stream-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+            opacity: 0.1;
+        }
+        .quantum-dot {
+            width: 4px;
+            height: 4px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            position: absolute;
+            animation: quantum 8s ease-in-out infinite;
+        }
+        @keyframes quantum {
+            0%, 100% {
+                transform: scale(1) rotate(0deg);
+                box-shadow: 0 0 5px var(--accent-cyan);
+            }
+            25% {
+                transform: scale(1.5) rotate(90deg);
+                box-shadow: 0 0 15px var(--accent-cyan);
+            }
+            50% {
+                transform: scale(0.5) rotate(180deg);
+                box-shadow: 0 0 10px #8B45FF;
+            }
+            75% {
+                transform: scale(1.2) rotate(270deg);
+                box-shadow: 0 0 20px #FF64DA;
+            }
+        }
+        .nav-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 25, 47, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 0.8rem 2rem;
+            z-index: 2000;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .nav-menu.active {
+            transform: translateY(0);
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+        .nav-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-links a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            position: relative;
+            padding: 0.5rem 0;
+            white-space: nowrap;
+        }
+        .nav-links a:hover {
+            color: var(--accent-cyan);
+            transform: translateY(-2px);
+            text-shadow: 0 0 10px var(--accent-cyan);
+        }
+        .nav-links a:active {
+            transform: translateY(0);
+            transition: all 0.1s ease;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-cyan);
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        .theme-toggle, .lang-toggle {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            padding: 0.5rem 1rem;
+            color: var(--accent-cyan);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+        .theme-toggle:hover, .lang-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(100, 255, 218, 0.3);
+        }
+        .scroll-indicators {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 2000;
+            background: rgba(10, 25, 47, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-50%) translateY(20px);
+        }
+        .scroll-indicators.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        .scroll-indicators.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-50%) translateY(20px);
+        }
+        .scroll-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(100, 255, 218, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .scroll-indicator.active {
+            background: var(--accent-cyan);
+            transform: scale(1.4);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+        .scroll-indicator:hover {
+            background: var(--accent-cyan);
+            transform: scale(1.2);
+        }
+        .scroll-indicator::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 200%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            border: 1px solid var(--glass-border);
+            z-index: 2001;
+        }
+        .scroll-indicator:hover::before {
+            opacity: 1;
+        }
+        .floating-buttons {
+            position: fixed;
+            right: 2rem;
+            bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+        }
+        .float-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+        .float-btn:hover {
+            transform: translateY(-3px) rotate(5deg);
+            box-shadow: 0 10px 25px rgba(100, 255, 218, 0.3);
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+        .float-btn:active {
+            transform: translateY(-1px) rotate(0deg) scale(0.95);
+            transition: all 0.1s ease;
+        }
+        .menu-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 2500;
+        }
+        .menu-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(100, 255, 218, 0.3);
+        }
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.1s ease;
+        }
+        .custom-cursor.hover {
+            transform: scale(2);
+            background: rgba(100, 255, 218, 0.3);
+        }
+        @media (max-width: 768px) {
+            .custom-cursor {
+                display: none;
+            }
+        }
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeOut 2s ease-in-out 3s forwards;
+        }
+        .glitch-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 20px var(--accent-cyan);
+            animation: glitch 2s ease-in-out;
+        }
+        @keyframes glitch {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-2px); }
+            40% { transform: translateX(2px); }
+            60% { transform: translateX(-1px); }
+            80% { transform: translateX(1px); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; visibility: hidden; }
+        }
+        .aurora-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #0A192F, #112240, #1D2D50);
+            z-index: -3;
+        }
+        .aurora-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(100, 255, 218, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(139, 69, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(255, 100, 218, 0.1) 0%, transparent 50%);
+            animation: aurora 40s linear infinite;
+        }
+        @keyframes aurora {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px) saturate(1.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 25%,
+                transparent 50%,
+                rgba(100, 255, 218, 0.05) 75%,
+                rgba(100, 255, 218, 0.1) 100%);
+            border-radius: inherit;
+            z-index: -1;
+        }
+        .particle-burst {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .burst-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: burstOut 0.6s ease-out forwards;
+        }
+        @keyframes burstOut {
+            0% {
+                opacity: 1;
+                transform: scale(1) translate(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) translate(var(--tx), var(--ty));
+            }
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.3);
+        }
+        .text-glow {
+            text-shadow: 0 0 10px var(--accent-cyan);
+        }
+        section {
+            min-height: 100vh;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        section.morphing {
+            transform: scale(0.95) rotateX(5deg);
+            filter: blur(2px);
+            transition: all 0.4s ease;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .hero {
+            position: relative;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .hero-3d .fallback-content {
+            text-align: center;
+            color: var(--accent-cyan);
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 800;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+            animation: fadeInUp 1s ease 0.5s both;
+            letter-spacing: -0.02em;
+            line-height: 0.9;
+            font-variation-settings: 'wght' 800;
+        }
+        .hero h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            animation: fadeInUp 1s ease 0.7s both;
+        }
+        .hero .tagline {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            margin-bottom: 3rem;
+            opacity: 0.8;
+            animation: fadeInUp 1s ease 0.9s both;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--glass-bg);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            animation: fadeInUp 1s ease 1.1s both;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.3);
+        }
+        .cta-button:active {
+            transform: translateY(0) scale(0.98);
+            transition: all 0.1s ease;
+        }
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .cta-button:hover::before {
+            opacity: 1;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) skewX(-15deg); }
+            100% { transform: translateX(200%) skewX(-15deg); }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .section-header {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-align: center;
+            margin-bottom: 4rem;
+            letter-spacing: -0.01em;
+            position: relative;
+        }
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+        .bento-item {
+            padding: 2rem;
+            transition: transform 0.3s ease;
+        }
+        .bento-item:hover {
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 15px 35px rgba(100, 255, 218, 0.1);
+        }
+        .bento-item {
+            position: relative;
+            overflow: hidden;
+        }
+        .bento-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(-45deg,
+                transparent,
+                rgba(100, 255, 218, 0.08),
+                transparent);
+            transition: right 0.7s ease;
+        }
+        .bento-item:hover::before {
+            right: 100%;
+        }
+        .bento-large {
+            grid-column: span 2;
+        }
+        .tech-categories {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+        .tech-category {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .tech-category::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            animation: categoryGlow 6s ease-in-out infinite;
+        }
+        @keyframes categoryGlow {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+        .category-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+        .category-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 1px;
+            background: var(--accent-cyan);
+        }
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1.5rem;
+        }
+        .tech-item {
+            text-align: center;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .tech-item:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(100, 255, 218, 0.2);
+            background: rgba(100, 255, 218, 0.08);
+        }
+        .tech-item {
+            position: relative;
+            overflow: hidden;
+        }
+        .tech-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(100, 255, 218, 0.2),
+                transparent);
+            transition: left 0.5s;
+        }
+        .tech-item:hover::after {
+            left: 100%;
+        }
+        .tech-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-cyan);
+        }
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-cyan), rgba(100, 255, 218, 0.3));
+            transform: translateX(-50%);
+        }
+        .timeline-item {
+            position: relative;
+            margin: 3rem 0;
+            padding: 2rem;
+            width: 45%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .timeline-item:nth-child(odd) {
+            left: 0;
+        }
+        .timeline-item:nth-child(even) {
+            left: 55%;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 2rem;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+        .timeline-item:nth-child(odd)::before {
+            right: -10px;
+        }
+        .timeline-item:nth-child(even)::before {
+            left: -10px;
+        }
+        .timeline-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(100, 255, 218, 0.1);
+        }
+        .timeline-item {
+            position: relative;
+            overflow: hidden;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(100, 255, 218, 0.1),
+                transparent);
+            transition: left 0.6s ease;
+        }
+        .timeline-item:hover::after {
+            left: 100%;
+        }
+        .cert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+        .cert-card {
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .cert-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(100, 255, 218, 0.15);
+        }
+        .cert-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .cert-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -100%;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--accent-cyan),
+                transparent);
+            transition: left 0.5s ease;
+        }
+        .cert-card:hover::after {
+            left: 100%;
+        }
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 3rem;
+            margin-bottom: 4rem;
+        }
+        .project-card {
+            padding: 2rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .project-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(100, 255, 218, 0.15);
+        }
+        .project-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg,
+                transparent,
+                var(--accent-cyan),
+                transparent,
+                var(--accent-cyan),
+                transparent);
+            background-size: 300% 300%;
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            animation: borderFlow 6s linear infinite;
+            transition: opacity 0.3s;
+        }
+        .project-card:hover::before {
+            opacity: 0.6;
+        }
+        @keyframes borderFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .project-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, var(--accent-cyan), #112240);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .project-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .project-link {
+            padding: 0.5rem 1rem;
+            background: var(--glass-bg);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        .project-link:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+        .contact {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        .contact-email {
+            display: inline-block;
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            padding: 1rem 2rem;
+            margin: 2rem 0;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .contact-email:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(100, 255, 218, 0.3);
+        }
+        .contact-email::before {
+            content: '💌';
+            position: absolute;
+            left: 1rem;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+        .contact-email:hover::before {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .contact-email:hover {
+            padding-left: 3.5rem;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .social-link {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .social-link:hover {
+            transform: translateY(-5px) rotate(10deg) scale(1.1);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.3);
+        }
+        .social-link:active {
+            transform: translateY(-2px) rotate(0deg) scale(1.05);
+            transition: all 0.1s ease;
+        }
+        footer {
+            background: var(--bg-secondary);
+            padding: 3rem 2rem 1rem;
+            margin-top: 4rem;
+        }
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .footer-section h4 {
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .footer-section p,
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            line-height: 1.6;
+            transition: color 0.3s ease;
+        }
+        .footer-section a:hover {
+            color: var(--accent-cyan);
+        }
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .footer-social a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        .footer-social a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 255, 218, 0.3);
+        }
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            body {
+                cursor: auto;
+            }
+            .custom-cursor {
+                display: none;
+            }
+            .nav-container {
+                flex-wrap: nowrap;
+                gap: 1rem;
+            }
+            .nav-links {
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+            .nav-links a {
+                font-size: 0.9rem;
+                padding: 0.8rem 0;
+            }
+            .theme-toggle, .lang-toggle {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+            .nav-container > div {
+                gap: 0.5rem;
+            }
+            .scroll-indicators {
+                bottom: 1rem;
+                padding: 0.4rem 0.8rem;
+                gap: 0.4rem;
+            }
+            .scroll-indicator {
+                width: 8px;
+                height: 8px;
+            }
+            .floating-buttons {
+                right: 1rem;
+                bottom: 3.5rem;
+                gap: 0.8rem;
+            }
+            .float-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1rem;
+            }
+            .timeline::before {
+                left: 20px;
+            }
+            .timeline-item {
+                width: calc(100% - 40px);
+                left: 40px !important;
+                padding: 1.5rem;
+            }
+            .timeline-item::before {
+                left: -30px !important;
+            }
+            .bento-large {
+                grid-column: span 1;
+            }
+            .project-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .tech-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 1rem;
+            }
+            .tech-item {
+                padding: 1rem;
+            }
+            .tech-icon {
+                font-size: 2.5rem;
+            }
+            section {
+                padding: 1rem;
+                min-height: 90vh;
+            }
+            .hero-content {
+                padding: 2rem 0;
+            }
+            .hero h1 {
+                font-size: clamp(2.5rem, 10vw, 4rem);
+                margin-bottom: 1.5rem;
+            }
+            .hero h2 {
+                font-size: clamp(1.2rem, 5vw, 2rem);
+            }
+            .hero .tagline {
+                font-size: clamp(0.9rem, 3vw, 1.1rem);
+                margin-bottom: 2rem;
+            }
+            .cta-button {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            .section-header {
+                font-size: clamp(1.8rem, 6vw, 2.5rem);
+                margin-bottom: 2rem;
+            }
+            .bento-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .cert-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .contact-email {
+                font-size: 1.2rem;
+                padding: 0.8rem 1.5rem;
+            }
+            .social-links {
+                gap: 1.5rem;
+            }
+            .social-link {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+        }
+        @media (hover: none) {
+            .tech-item:hover,
+            .project-card:hover,
+            .timeline-item:hover,
+            .bento-item:hover,
+            .cert-card:hover {
+                transform: none;
+            }
+            .tech-item:active,
+            .project-card:active,
+            .timeline-item:active,
+            .bento-item:active,
+            .cert-card:active {
+                transform: scale(0.98);
+                transition: transform 0.1s ease;
+            }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .nav-links {
+                gap: 1.5rem;
+            }
+            .tech-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            }
+            .project-grid {
+                grid-template-columns: 1fr;
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            .bento-large {
+                grid-column: span 1;
+            }
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-cyan);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 255, 218, 0.8);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(100, 255, 218, 0.3);
+            pointer-events: none;
+            transform: scale(0);
+            animation: rippleEffect 0.6s linear;
+        }
+        @keyframes rippleEffect {
+            to {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        .hero h1 {
+            position: relative;
+        }
+        .hero h1::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--accent-cyan);
+            animation: blink 1s infinite;
+        }
+        
+        .typing-cursor {
+            display: inline-block;
+            background-color: var(--accent-cyan);
+            margin-left: 3px;
+            width: 3px;
+            animation: blink 1s infinite;
+        }
+        
+        .typing-cursor.typing {
+            animation: none;
+            background-color: var(--accent-cyan);
+        }
+        
+        .particle-burst {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .burst-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: burstOut 0.6s ease-out forwards;
+        }
+        
+        @keyframes burstOut {
+            0% {
+                opacity: 1;
+                transform: scale(1) translate(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) translate(var(--tx), var(--ty));
+            }
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-toggle" onclick="toggleMenu()" role="button" aria-label="Toggle navigation menu" data-aria-label-th="สลับเมนูนำทาง" aria-expanded="false">
+        <span id="menuIcon">☰</span>
+    </div>
+    <nav class="nav-menu" id="navMenu">
+        <div class="nav-container">
+            <a href="#hero" class="nav-logo">UknowTechno</a>
+            <ul class="nav-links">
+                <li><a href="#synopsis" onclick="closeMenu()" aria-label="Go to About section" data-aria-label-th="ไปที่ส่วนเกี่ยวกับ" data-en="About" data-th="เกี่ยวกับ">About</a></li>
+                <li><a href="#arsenal" onclick="closeMenu()" aria-label="Go to Skills section" data-aria-label-th="ไปที่ส่วนทักษะ" data-en="Skills" data-th="ทักษะ">Skills</a></li>
+                <li><a href="#blueprint" onclick="closeMenu()" aria-label="Go to Experience section" data-aria-label-th="ไปที่ส่วนประสบการณ์" data-en="Experience" data-th="ประสบการณ์">Experience</a></li>
+                <li><a href="#certificates" onclick="closeMenu()" aria-label="Go to Education section" data-aria-label-th="ไปที่ส่วนการศึกษา" data-en="Education" data-th="การศึกษา">Education</a></li>
+                <li><a href="#projects" onclick="closeMenu()" aria-label="Go to Projects section" data-aria-label-th="ไปที่ส่วนโครงการ" data-en="Projects" data-th="โครงการ">Projects</a></li>
+                <li><a href="#contact" onclick="closeMenu()" aria-label="Go to Contact section" data-aria-label-th="ไปที่ส่วนติดต่อ" data-en="Contact" data-th="ติดต่อ">Contact</a></li>
+            </ul>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button class="lang-toggle" onclick="toggleLanguage()" aria-label="Toggle language" data-aria-label-th="สลับภาษา">
+                    <span id="langIcon">🌐</span> <span id="langText">EN</span>
+                </button>
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme" data-aria-label-th="สลับธีม">
+                    <span id="themeIcon">🎨</span> <span id="themeText">Cyan</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div class="custom-cursor"></div>
+    <canvas class="starfield-canvas" id="starfieldCanvas"></canvas>
+    <canvas class="matrix-rain" id="matrixCanvas"></canvas>
+    <canvas class="particle-canvas" id="particleCanvas"></canvas>
+    <canvas class="data-stream-canvas" id="dataStreamCanvas"></canvas>
+    <canvas class="neural-network" id="neuralCanvas"></canvas>
+    <div class="scan-lines"></div>
+    <div class="preloader">
+        <div class="glitch-logo holo-text">UknowTechno</div>
+    </div>
+    <div class="aurora-bg"></div>
+    <div class="scroll-indicators">
+        <div class="scroll-indicator active" data-tooltip="Home" data-tooltip-th="หน้าแรก" data-section="hero"></div>
+        <div class="scroll-indicator" data-tooltip="About" data-tooltip-th="เกี่ยวกับ" data-section="synopsis"></div>
+        <div class="scroll-indicator" data-tooltip="Skills" data-tooltip-th="ทักษะ" data-section="arsenal"></div>
+        <div class="scroll-indicator" data-tooltip="Experience" data-tooltip-th="ประสบการณ์" data-section="blueprint"></div>
+        <div class="scroll-indicator" data-tooltip="Education" data-tooltip-th="การศึกษา" data-section="certificates"></div>
+        <div class="scroll-indicator" data-tooltip="Projects" data-tooltip-th="โครงการ" data-section="projects"></div>
+        <div class="scroll-indicator" data-tooltip="Portfolio" data-tooltip-th="พอร์ตโฟลิโอ" data-section="architecture"></div>
+        <div class="scroll-indicator" data-tooltip="Contact" data-tooltip-th="ติดต่อ" data-section="contact"></div>
+    </div>
+    <div class="floating-buttons">
+        <a href="#hero" class="float-btn" title="Go to Top" data-title-th="ไปที่ด้านบน" aria-label="Go to top of page" data-aria-label-th="ไปที่ด้านบนของหน้า">↑</a>
+        <a href="#contact" class="float-btn" title="Go to Bottom" data-title-th="ไปที่ด้านล่าง" aria-label="Go to bottom of page" data-aria-label-th="ไปที่ด้านล่างของหน้า">↓</a>
+        <a href="https://wa.me/8562028915965" class="float-btn" title="WhatsApp" data-title-th="WhatsApp" aria-label="Contact via WhatsApp" data-aria-label-th="ติดต่อผ่าน WhatsApp">📱</a>
+    </div>
+    <section id="hero" class="hero">
+        <div class="hero-3d">
+            <div class="fallback-content" style="display: none;" data-en="3D effect not available. Enjoy the portfolio!" data-th="เอฟเฟกต์ 3 มิติไม่พร้อมใช้งาน สนุกกับพอร์ตโฟลิโอ!">3D effect not available. Enjoy the portfolio!</div>
+        </div>
+        <div class="container hero-content">
+            <h1 class="text-glow holo-text">UknowTechno</h1>
+            <h2 data-en="Phengsavanh PHANTHAVONG" data-th="เพ็งสวรรค์ พันธวงศ์">Phengsavanh PHANTHAVONG</h2>
+            <p class="tagline" data-en="Digital Architect | Full-Stack Developer Crafting Future-Forward Solutions" data-th="สถาปนิกดิจิทัล | นักพัฒนาฟูลสแต็กที่สร้างโซลูชั่นล้ำสมัย">Digital Architect | Full-Stack Developer Crafting Future-Forward Solutions</p>
+            <a href="#synopsis" class="cta-button enhanced-glow" aria-label="Explore the About section" data-aria-label-th="สำรวจส่วนเกี่ยวกับ" data-en="Explore the Blueprint" data-th="สำรวจพิมพ์เขียว">Explore the Blueprint</a>
+        </div>
+    </section>
+    <section id="synopsis">
+        <div class="container">
+            <h2 class="section-header" data-en="Synopsis: From Financial Systems to Digital Frontiers" data-th="บทสรุป: จากระบบการเงินสู่แนวหน้าดิจิทัล">Synopsis: From Financial Systems to Digital Frontiers</h2>
+            <div class="bento-grid">
+                <div class="bento-item bento-large glass glow">
+                    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Personal Profile" data-th="ประวัติส่วนตัว">Personal Profile</h3>
+                    <p data-en="Over 10 years of experience in banking, specializing in digital systems, mobile banking, and online banking. Currently pursuing a Master's degree in Computer Science, with skills in modern software development. Passionate about emerging technologies, AI, and continuous learning to drive innovation and productivity. My journey from financial systems auditing to full-stack development has equipped me with deep understanding of secure, scalable solutions and the ability to bridge business requirements with cutting-edge technical implementations." data-th="ประสบการณ์กว่า 10 ปีในวงการธนาคาร โดยเชี่ยวชาญด้านระบบดิจิทัล การธนาคารผ่านมือถือ และการธนาคารออนไลน์ ปัจจุบันกำลังศึกษาต่อในระดับปริญญาโทด้านวิทยาการคอมพิวเตอร์ พร้อมทักษะในการพัฒนาซอฟต์แวร์สมัยใหม่ มีความหลงใหลในเทคโนโลยีใหม่ ๆ AI และการเรียนรู้อย่างต่อเนื่องเพื่อขับเคลื่อนนวัตกรรมและประสิทธิภาพ เส้นทางของฉันจากการตรวจสอบระบบการเงินสู่การเป็นนักพัฒนาฟูลสแต็ก ทำให้ฉันมีความเข้าใจอย่างลึกซึ้งในโซลูชั่นที่ปลอดภัยและสามารถขยายขนาดได้ รวมถึงความสามารถในการเชื่อมโยงความต้องการทางธุรกิจกับการนำไปปฏิบัติด้วยเทคโนโลยีล้ำสมัย">Over 10 years of experience in banking, specializing in digital systems, mobile banking, and online banking. Currently pursuing a Master's degree in Computer Science, with skills in modern software development. Passionate about emerging technologies, AI, and continuous learning to drive innovation and productivity. My journey from financial systems auditing to full-stack development has equipped me with deep understanding of secure, scalable solutions and the ability to bridge business requirements with cutting-edge technical implementations.</p>
+                </div>
+                <div class="bento-item glass glow">
+                    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Personal Interests" data-th="ความสนใจส่วนตัว">Personal Interests</h3>
+                    <div style="display: flex; justify-content: space-around; margin-top: 1rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💻</div>
+                            <span data-en="Learning Tech" data-th="เรียนรู้เทคโนโลยี">Learning Tech</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏞️</div>
+                            <span data-en="Adven ture" data-th="การผจญภัย">Adven ture</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏸</div>
+                            <span data-en="Bad minton" data-th="แบดมินตัน">Bad minton</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚽</div>
+                            <span data-en="Foot ball" data-th="ฟุตบอล">Foot ball</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bento-item glass glow">
+                    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Languages Spoken" data-th="ภาษาที่พูดได้">Languages Spoken</h3>
+                    <div style="space-y: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span data-en="Lao" data-th="ลาว">Lao</span>
+                            <span style="color: var(--accent-cyan);" data-en="Native" data-th="เจ้าของภาษา">Native</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span data-en="Thai" data-th="ไทย">Thai</span>
+                            <span style="color: var(--accent-cyan);" data-en="Fluent" data-th="คล่องแคล่ว">Fluent</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span data-en="English" data-th="อังกฤษ">English</span>
+                            <span style="color: var(--accent-cyan);" data-en="Advanced" data-th="ขั้นสูง">Advanced</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="arsenal">
+        <div class="container">
+            <h2 class="section-header" data-en="The Arsenal: My Technology Stack" data-th="คลังแสง: สแต็กเทคโนโลยีของฉัน">The Arsenal: My Technology Stack</h2>
+            <div class="tech-categories">
+                <div class="tech-category">
+                    <h3 class="category-title" data-en="Programming Languages" data-th="ภาษาโปรแกรม">Programming Languages</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">☕</div>
+                            <h4 data-en="Java" data-th="จาวา">Java</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">🐍</div>
+                            <h4 data-en="Python" data-th="ไพธอน">Python</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">📜</div>
+                            <h4 data-en="JavaScript" data-th="จาวาสคริปต์">JavaScript</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">🎯</div>
+                            <h4 data-en="Kotlin" data-th="คอทลิน">Kotlin</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">🔷</div>
+                            <h4 data-en="Dart" data-th="ดาร์ท">Dart</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">💙</div>
+                            <h4 data-en="C#" data-th="ซีชาร์ป">C#</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">🌐</div>
+                            <h4 data-en="HTML" data-th="เอชทีเอ็มแอล">HTML</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="language">
+                            <div class="tech-icon">🎨</div>
+                            <h4 data-en="CSS" data-th="ซีเอสเอส">CSS</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="tech-category">
+                    <h3 class="category-title" data-en="Frameworks & Libraries" data-th="เฟรมเวิร์คและไลบรารี">Frameworks & Libraries</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon">⚛️</div>
+                            <h4 data-en="React" data-th="รีแอค">React</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon">📱</div>
+                            <h4 data-en="React Native" data-th="รีแอคเนทีฟ">React Native</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon">🟢</div>
+                            <h4 data-en="Node.js" data-th="โหนดเจเอส">Node.js</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon"> ∲ </div>
+                            <h4 data-en="Flutter" data-th="ฟลัตเตอร์">Flutter</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon">🍃</div>
+                            <h4 data-en="Spring Boot" data-th="สปริงบูต">Spring Boot</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon">⚡</div>
+                            <h4 data-en="Django" data-th="จังโก">Django</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="framework">
+                            <div class="tech-icon"> ₳ </div>
+                            <h4 data-en="ASP.NET" data-th="เอเอสพีดอทเน็ต">ASP.NET</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="tech-category">
+                    <h3 class="category-title" data-en="AI & Machine Learning" data-th="AI และแมชชีนเลิร์นนิง">AI & Machine Learning</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item glass glow" data-category="ai">
+                            <div class="tech-icon">🧠</div>
+                            <h4 data-en="Machine Learning" data-th="แมชชีนเลิร์นนิง">Machine Learning</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="ai">
+                            <div class="tech-icon">♻️</div>
+                            <h4 data-en="Deep Learning" data-th="ดีปเลิร์นนิง">Deep Learning</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="ai">
+                            <div class="tech-icon">🐼</div>
+                            <h4 data-en="Pandas" data-th="แพนดาส">Pandas</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="ai">
+                            <div class="tech-icon">🔢</div>
+                            <h4 data-en="NumPy" data-th="นัมไพ">NumPy</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="ai">
+                            <div class="tech-icon">🧪</div>
+                            <h4 data-en="Scikit-learn" data-th="ซิกิต-เลิร์น">Scikit-learn</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="ai">
+                            <div class="tech-icon"> ₮ </div>
+                            <h4 data-en="TensorFlow" data-th="เทนเซอร์โฟลว์">TensorFlow</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="tech-category">
+                    <h3 class="category-title" data-en="Databases & Cloud" data-th="ฐานข้อมูลและคลาวด์">Databases & Cloud</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item glass glow" data-category="database">
+                            <div class="tech-icon">🐘</div>
+                            <h4 data-en="PostgreSQL" data-th="โพสต์เกรสคิวแอล">PostgreSQL</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="database">
+                            <div class="tech-icon">🍃</div>
+                            <h4 data-en="MongoDB" data-th="มองโกดีบี">MongoDB</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="database">
+                            <div class="tech-icon">🔥</div>
+                            <h4 data-en="Firebase" data-th="ไฟร์เบส">Firebase</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="database">
+                            <div class="tech-icon">🗄️</div>
+                            <h4 data-en="MySQL" data-th="ไมเอสคิวแอล">MySQL</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="database">
+                            <div class="tech-icon">☁️</div>
+                            <h4 data-en="AWS" data-th="เอดับบลิวเอส">AWS</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="database">
+                            <div class="tech-icon">🌩️</div>
+                            <h4 data-en="Azure" data-th="อะซัวร์">Azure</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="tech-category">
+                    <h3 class="category-title" data-en="Tools & DevOps" data-th="เครื่องมือและ DevOps">Tools & DevOps</h3>
+                    <div class="tech-grid">
+                        <div class="tech-item glass glow" data-category="tool">
+                            <div class="tech-icon">🐳</div>
+                            <h4 data-en="Docker" data-th="ด็อกเกอร์">Docker</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="tool">
+                            <div class="tech-icon">🌐</div>
+                            <h4 data-en="Git" data-th="กิต">Git</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="tool">
+                            <div class="tech-icon">🤖</div>
+                            <h4 data-en="Android Studio" data-th="แอนดรอยด์สตูดิโอ">Android Studio</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="tool">
+                            <div class="tech-icon">💻</div>
+                            <h4 data-en="VS Code" data-th="วีเอสโค้ด">VS Code</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="tool">
+                            <div class="tech-icon">📊</div>
+                            <h4 data-en="Postman" data-th="โพสต์แมน">Postman</h4>
+                        </div>
+                        <div class="tech-item glass glow" data-category="tool">
+                            <div class="tech-icon">🔄</div>
+                            <h4 data-en="CI/CD" data-th="ซีไอ/ซีดี">CI/CD</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="blueprint">
+        <div class="container">
+            <h2 class="section-header" data-en="The Blueprint: Career Trajectory" data-th="พิมพ์เขียว: เส้นทางอาชีพ">The Blueprint: Career Trajectory</h2>
+            <div class="timeline">
+                <div class="timeline-item glass glow">
+                    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Head of Digital Application Division" data-th="หัวหน้าฝ่ายแอปพลิเคชันดิจิทัล">Head of Digital Application Division</h3>
+                    <h4 style="opacity: 0.8; margin-bottom: 0.5rem;" data-en="PSVB Bank" data-th="ธนาคาร PSVB">PSVB Bank</h4>
+                    <p style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 1rem;" data-en="Mar 2023 - Present" data-th="มีนาคม 2566 - ปัจจุบัน">Mar 2023 - Present</p>
+                    <p data-en="Leading development, integration, and pre-launch testing of mobile/online banking systems. Coordinating cross-functional teams to ensure secure and reliable financial services delivery." data-th="นำการพัฒนา การรวมระบบ และการทดสอบก่อนเปิดตัวระบบธนาคารผ่านมือถือ/ออนไลน์ ประสานงานกับทีมข้ามสายงานเพื่อให้มั่นใจว่าบริการทางการเงินมีความปลอดภัยและเชื่อถือได้">Leading development, integration, and pre-launch testing of mobile/online banking systems. Coordinating cross-functional teams to ensure secure and reliable financial services delivery.</p>
+                </div>
+                <div class="timeline-item glass glow">
+                    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Product Development Staff" data-th="เจ้าหน้าที่พัฒนาผลิตภัณฑ์">Product Development Staff</h3>
+                    <h4 style="opacity: 0.8; margin-bottom: 0.5rem;" data-en="KokKok Solution" data-th="โคกโคก โซลูชัน">KokKok Solution</h4>
+                    <p style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 1rem;" data-en="Oct 2023 - Mar 2023" data-th="ตุลาคม 2566 - มีนาคม 2566">Oct 2023 - Mar 2023</p>
+                    <p data-en="Supported new product development through technical research and conducted comprehensive pre-launch testing for features and releases, ensuring optimal performance and user experience." data-th="สนับสนุนการพัฒนาผลิตภัณฑ์ใหม่ผ่านการวิจัยด้านเทคนิค และดำเนินการทดสอบก่อนเปิดตัวอย่างครอบคลุมสำหรับฟีเจอร์และการปล่อยซอฟต์แวร์ เพื่อให้มั่นใจถึงประสิทธิภาพและประสบการณ์ผู้ใช้ที่เหมาะสม">Supported new product development through technical research and conducted comprehensive pre-launch testing for features and releases, ensuring optimal performance and user experience.</p>
+                </div>
+                <div class="timeline-item glass glow">
+                    <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Internal Auditor Specialist" data-th="ผู้เชี่ยวชาญด้านการตรวจสอบภายใน">Internal Auditor Specialist</h3>
+                    <h4 style="opacity: 0.8; margin-bottom: 0.5rem;" data-en="ACLEDA Bank" data-th="ธนาคาร ACLEDA">ACLEDA Bank</h4>
+                    <p style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 1rem;" data-en="Jan 2014 - Oct 2023" data-th="มกราคม 2557 - ตุลาคม 2566">Jan 2014 - Oct 2023</p>
+                    <p data-en="Specialized in Information Security, Digital Banking, and AML/CFT units. Advanced to Branch Internal Auditor Manager, managing comprehensive audits of financial products across Vientiane and Chanthabuly branches." data-th="เชี่ยวชาญด้านความปลอดภัยข้อมูล การธนาคารดิจิทัล และหน่วย AML/CFT เลื่อนตำแหน่งเป็นผู้จัดการการตรวจสอบภายในสาขา ดูแลการตรวจสอบผลิตภัณฑ์ทางการเงินอย่างครอบคลุมในสาขาเวียงจันทน์และจันทบูลี">Specialized in Information Security, Digital Banking, and AML/CFT units. Advanced to Branch Internal Auditor Manager, managing comprehensive audits of financial products across Vientiane and Chanthabuly branches.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="certificates">
+        <div class="container">
+        <h2 class="section-header" data-en="Skill Accreditations & Continuous Learning" data-th="การรับรองทักษะ & การเรียนรู้อย่างต่อเนื่อง">Skill Accreditations & Continuous Learning</h2>
+        <div class="cert-grid">
+            <div class="cert-card glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Android App Development" data-th="การพัฒนาแอปพลิเคชันแอนดรอยด์">Android App Development</h3>
+                <p style="margin-bottom: 1rem;" data-en="Jul 23 - Aug 2, 2024" data-th="23 กรกฎาคม - 2 สิงหาคม 2567">Jul 23 - Aug 2, 2024</p>
+                <p style="opacity: 0.8; font-size: 0.9rem;" data-en="Korea Technopark Association & Dept. of Digital Technology" data-th="สมาคมเทคโนโลยีพาร์คเกาหลี & กรมเทคโนโลยีดิจิทัล">Korea Technopark Association & Dept. of Digital Technology</p>
+            </div>
+            <div class="cert-card glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Advanced Programming Training" data-th="การฝึกอบรมการเขียนโปรแกรมขั้นสูง">Advanced Programming Training</h3>
+                <p style="margin-bottom: 1rem;" data-en="Dec 5-9, 2023" data-th="5-9 ธันวาคม 2566">Dec 5-9, 2023</p>
+                <p style="opacity: 0.8; font-size: 0.9rem;" data-en="Korea Technopark Association & Dept. of Digital Technology" data-th="สมาคมเทคโนโลยีพาร์คเกาหลี & กรมเทคโนโลยีดิจิทัล">Korea Technopark Association & Dept. of Digital Technology</p>
+            </div>
+            <div class="cert-card glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Java Programming" data-th="การเขียนโปรแกรมจาวา">Java Programming</h3>
+                <p style="margin-bottom: 1rem;" data-en="Jul 14 - Aug 25, 2023" data-th="14 กรกฎาคม - 25 สิงหาคม 2566">Jul 14 - Aug 25, 2023</p>
+                <p style="opacity: 0.8; font-size: 0.9rem;" data-en="Korea Technopark Association & Dept. of Digital Technology" data-th="สมาคมเทคโนโลยีพาร์คเกาหลี & กรมเทคโนโลยีดิจิทัล">Korea Technopark Association & Dept. of Digital Technology</p>
+            </div>
+        </div>
+        <h3 style="color: var(--accent-cyan); text-align: center; font-size: 2rem; margin: 4rem 0 2rem;" data-en="Educational Foundation" data-th="รากฐานการศึกษา">Educational Foundation</h3>
+        <div class="cert-grid">
+            <div class="cert-card glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Master in Computer Science" data-th="ปริญญาโทด้านวิทยาการคอมพิวเตอร์">Master in Computer Science</h3>
+                <p style="margin-bottom: 1rem;" data-en="Jan 2023 - Present" data-th="มกราคม 2566 - ปัจจุบัน">Jan 2023 - Present</p>
+                <p style="opacity: 0.8; font-size: 0.9rem;" data-en="Faculty of Natural Sciences, National University of Laos" data-th="คณะวิทยาศาสตร์ธรรมชาติ มหาวิทยาลัยแห่งชาติลาว">Faculty of Natural Sciences, National University of Laos</p>
+            </div>
+            <div class="cert-card glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Bachelor's in English" data-th="ปริญญาตรีสาขาภาษาอังกฤษ">Bachelor's in English</h3>
+                <p style="margin-bottom: 1rem;" data-en="2009 - 2014" data-th="2552 - 2557">2009 - 2014</p>
+                <p style="opacity: 0.8; font-size: 0.9rem;" data-en="Faculty of Education, National University of Laos" data-th="คณะศึกษาศาสตร์ มหาวิทยาลัยแห่งชาติลาว">Faculty of Education, National University of Laos</p>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="projects">
+    <div class="container">
+        <h2 class="section-header" data-en="Project Showcase" data-th="การแสดงผลงานโครงการ">Project Showcase</h2>
+        <div class="project-grid">
+            <div class="project-card glass glow">
+                <div class="project-image" data-en="Mobile App" data-th="แอปพลิเคชันบนมือถือ">Mobile App</div>
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Mobile App" data-th="แอปพลิเคชันบนมือถือ">Mobile App</h3>
+                <p data-en="Developed a secure mobile app using Flutter and Firebase, enabling seamless transactions and real-time notifications for users." data-th="พัฒนาแอปพลิเคชันบนมือถือที่ปลอดภัยโดยใช้ Flutter และ Firebase ทำให้สามารถทำธุรกรรมได้อย่างราบรื่นและแจ้งเตือนแบบเรียลไทม์สำหรับผู้ใช้">Developed a secure mobile app using Flutter and Firebase, enabling seamless transactions and real-time notifications for users.</p>
+                <div class="project-links">
+                    <a href="https://github.com/uknowtechno/banking-app" class="project-link" target="_blank" data-en="View Code" data-th="ดูโค้ด">View Code</a>
+                    <a href="https://bankingapp.demo" class="project-link" target="_blank" data-en="Live Demo" data-th="ตัวอย่างสด">Live Demo</a>
+                </div>
+            </div>
+            <div class="project-card glass glow">
+                <div class="project-image" data-en="E-Commerce Platform" data-th="แพลตฟอร์มอีคอมเมิร์ซ">E-Commerce Platform</div>
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="E-Commerce Platform" data-th="แพลตฟอร์มอีคอมเมิร์ซ">E-Commerce Platform</h3>
+                <p data-en="Built a full-stack e-commerce platform with React, Node.js, and MongoDB, featuring payment integration and inventory management." data-th="สร้างแพลตฟอร์มอีคอมเมิร์ซฟูลสแต็กด้วย React, Node.js และ MongoDB พร้อมการรวมระบบชำระเงินและการจัดการสินค้าคงคลัง">Built a full-stack e-commerce platform with React, Node.js, and MongoDB, featuring payment integration and inventory management.</p>
+                <div class="project-links">
+                    <a href="https://github.com/uknowtechno/ecommerce" class="project-link" target="_blank" data-en="View Code" data-th="ดูโค้ด">View Code</a>
+                    <a href="https://ecommerce.demo" class="project-link" target="_blank" data-en="Live Demo" data-th="ตัวอย่างสด">Live Demo</a>
+                </div>
+            </div>
+            <div class="project-card glass glow">
+                <div class="project-image" data-en="AI-Powered Chatbot" data-th="แชทบอทที่ใช้ AI">AI-Powered Chatbot</div>
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="AI-Powered Chatbot" data-th="แชทบอทที่ใช้ AI">AI-Powered Chatbot</h3>
+                <p data-en="Designed an AI-powered chatbot using TensorFlow and Python, integrated with customer service platforms to automate responses." data-th="ออกแบบแชทบอทที่ใช้ AI โดยใช้ TensorFlow และ Python รวมเข้ากับแพลตฟอร์มบริการลูกค้าเพื่อตอบกลับอัตโนมัติ">Designed an AI-powered chatbot using TensorFlow and Python, integrated with customer service platforms to automate responses.</p>
+                <div class="project-links">
+                    <a href="https://github.com/uknowtechno/chatbot" class="project-link" target="_blank" data-en="View Code" data-th="ดูโค้ด">View Code</a>
+                    <a href="https://chatbot.demo" class="project-link" target="_blank" data-en="Live Demo" data-th="ตัวอย่างสด">Live Demo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="architecture">
+    <div class="container">
+        <h2 class="section-header" data-en="Portfolio Architecture" data-th="สถาปัตยกรรมพอร์ตโฟลิโอ">Portfolio Architecture</h2>
+        <div class="bento-grid">
+            <div class="bento-item bento-large glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Technical Approach" data-th="แนวทางด้านเทคนิค">Technical Approach</h3>
+                <p data-en="This portfolio is built with a focus on performance, accessibility, and visual appeal. Leveraging HTML5, CSS3, and JavaScript with Three.js for 3D effects, it features a responsive design, glassmorphism aesthetics, and dynamic animations. The site is optimized for SEO and includes a custom language toggle for English and Thai, ensuring inclusivity." data-th="พอร์ตโฟลิโอนี้สร้างขึ้นโดยเน้นที่ประสิทธิภาพ การเข้าถึง และความสวยงามทางสายตา ใช้ HTML5, CSS3 และ JavaScript ร่วมกับ Three.js สำหรับเอฟเฟกต์ 3 มิติ มีการออกแบบที่ตอบสนองต่ออุปกรณ์ ใช้สุนทรียศาสตร์แบบ glassmorphism และแอนิเมชันแบบไดนามิก เว็บไซต์นี้ได้รับการปรับแต่งสำหรับ SEO และมีฟังก์ชันสลับภาษาแบบกำหนดเองสำหรับภาษาอังกฤษและไทย เพื่อให้มั่นใจถึงความครอบคลุม">This portfolio is built with a focus on performance, accessibility, and visual appeal. Leveraging HTML5, CSS3, and JavaScript with Three.js for 3D effects, it features a responsive design, glassmorphism aesthetics, and dynamic animations. The site is optimized for SEO and includes a custom language toggle for English and Thai, ensuring inclusivity.</p>
+            </div>
+            <div class="bento-item glass glow">
+                <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;" data-en="Key Features" data-th="คุณสมบัติหลัก">Key Features</h3>
+                <ul style="list-style: none; padding-left: 0;">
+                    <li data-en="Responsive Design" data-th="การออกแบบที่ตอบสนอง">Responsive Design</li>
+                    <li data-en="Glassmorphism UI" data-th="ส่วนต่อประสานแบบ Glassmorphism">Glassmorphism UI</li>
+                    <li data-en="3D Visual Effects" data-th="เอฟเฟกต์ภาพ 3 มิติ">3D Visual Effects</li>
+                    <li data-en="Language Toggle (EN/TH)" data-th="สลับภาษา (EN/TH)">Language Toggle (EN/TH)</li>
+                    <li data-en="SEO Optimized" data-th="ปรับแต่ง SEO">SEO Optimized</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="contact" class="contact">
+    <div class="container">
+        <h2 class="section-header" data-en="Get in Touch" data-th="ติดต่อ">Get in Touch</h2>
+        <p data-en="Interested in collaborating or have a project in mind? Reach out, and let's build something extraordinary together!" data-th="สนใจที่จะร่วมงานหรือมีโครงการในใจ? ติดต่อมา แล้วมาสร้างบางสิ่งที่ยอดเยี่ยมด้วยกัน!">Interested in collaborating or have a project in mind? Reach out, and let's build something extraordinary together!</p>
+        <a href="mailto:phengsavanh@example.com" class="contact-email" data-en="Send a Message" data-th="ส่งข้อความ">Send a Message</a>
+        <div class="social-links">
+            <a href="https://github.com/uknowtechno" class="social-link" target="_blank" aria-label="GitHub Profile" data-aria-label-th="โปรไฟล์ GitHub">🐙</a>
+            <a href="https://linkedin.com/in/phengsavanh" class="social-link" target="_blank" aria-label="LinkedIn Profile" data-aria-label-th="โปรไฟล์ LinkedIn">💼</a>
+            <a href="https://wa.me/8562028915965" class="social-link" target="_blank" aria-label="WhatsApp Contact" data-aria-label-th="ติดต่อ WhatsApp">📱</a>
+        </div>
+    </div>
+</section>
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4 data-en="About UknowTechno" data-th="เกี่ยวกับ UknowTechno">About UknowTechno</h4>
+            <p data-en="UknowTechno is the professional alias of Phengsavanh Phanthavong, a full-stack developer and digital architect dedicated to crafting innovative solutions." data-th="UknowTechno เป็นนามแฝงมืออาชีพของเพ็งสวรรค์ พันธวงศ์ นักพัฒนาฟูลสแต็กและสถาปนิกดิจิทัลที่ทุ่มเทให้กับการสร้างโซลูชั่นที่สร้างสรรค์">UknowTechno is the professional alias of Phengsavanh Phanthavong, a full-stack developer and digital architect dedicated to crafting innovative solutions.</p>
+        </div>
+        <div class="footer-section">
+            <h4 data-en="Quick Links" data-th="ลิงก์ด่วน">Quick Links</h4>
+            <p><a href="#synopsis" data-en="About" data-th="เกี่ยวกับ">About</a></p>
+            <p><a href="#arsenal" data-en="Skills" data-th="ทักษะ">Skills</a></p>
+            <p><a href="#blueprint" data-en="Experience" data-th="ประสบการณ์">Experience</a></p>
+            <p><a href="#projects" data-en="Projects" data-th="โครงการ">Projects</a></p>
+        </div>
+        <div class="footer-section">
+            <h4 data-en="Connect" data-th="เชื่อมต่อ">Connect</h4>
+            <div class="footer-social">
+                <a href="https://github.com/uknowtechno" target="_blank" aria-label="GitHub" data-aria-label-th="GitHub">🐙</a>
+                <a href="https://linkedin.com/in/phengsavanh" target="_blank" aria-label="LinkedIn" data-aria-label-th="LinkedIn">💼</a>
+                <a href="https://wa.me/8562028915965" target="_blank" aria-label="WhatsApp" data-aria-label-th="WhatsApp">📱</a>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p data-en="© 2025 UknowTechno. All rights reserved." data-th="© 2568 UknowTechno. สงวนลิขสิทธิ์">© 2025 UknowTechno. All rights reserved.</p>
+    </div>
+</footer>
+</body>
+<script>
+    const translations = {
+        en: {
+            title: "UknowTechno - Digital Architect",
+            menuToggleAria: "Toggle navigation menu",
+            navAbout: "About",
+            navSkills: "Skills",
+            navExperience: "Experience",
+            navEducation: "Education",
+            navProjects: "Projects",
+            navContact: "Contact",
+            navAboutAria: "Go to About section",
+            navSkillsAria: "Go to Skills section",
+            navExperienceAria: "Go to Experience section",
+            navEducationAria: "Go to Education section",
+            navProjectsAria: "Go to Projects section",
+            navContactAria: "Go to Contact section",
+            langToggleAria: "Toggle language",
+            themeToggleAria: "Toggle theme",
+            scrollHome: "Home",
+            scrollAbout: "About",
+            scrollSkills: "Skills",
+            scrollExperience: "Experience",
+            scrollEducation: "Education",
+            scrollProjects: "Projects",
+            scrollPortfolio: "Portfolio",
+            scrollContact: "Contact",
+            floatTopTitle: "Go to Top",
+            floatBottomTitle: "Go to Bottom",
+            floatWhatsAppTitle: "WhatsApp",
+            floatTopAria: "Go to top of page",
+            floatBottomAria: "Go to bottom of page",
+            floatWhatsAppAria: "Contact via WhatsApp",
+            heroFallback: "3D effect not available. Enjoy the portfolio!",
+            heroName: "Phengsavanh PHANTHAVONG",
+            heroTagline: "Digital Architect | Full-Stack Developer Crafting Future-Forward Solutions",
+            heroCta: "Explore the Blueprint",
+            heroCtaAria: "Explore the About section",
+            synopsisHeader: "Synopsis: From Financial Systems to Digital Frontiers",
+            profileTitle: "Personal Profile",
+            profileText: "Over 10 years of experience in banking, specializing in digital systems, mobile banking, and online banking. Currently pursuing a Master's degree in Computer Science, with skills in modern software development. Passionate about emerging technologies, AI, and continuous learning to drive innovation and productivity. My journey from financial systems auditing to full-stack development has equipped me with deep understanding of secure, scalable solutions and the ability to bridge business requirements with cutting-edge technical implementations.",
+            interestsTitle: "Personal Interests",
+            interestTech: "Learning Tech",
+            interestFootball: "Foot ball",
+            interestAdventure: "Adven ture",
+            interestBadminton: "Bad minton",
+            languagesTitle: "Languages Spoken",
+            langLao: "Lao",
+            langThai: "Thai",
+            langEnglish: "English",
+            proficiencyNative: "Native",
+            proficiencyFluent: "Fluent",
+            proficiencyAdvanced: "Advanced",
+            arsenalHeader: "The Arsenal: My Technology Stack",
+            categoryLanguages: "Programming Languages",
+            categoryFrameworks: "Frameworks & Libraries",
+            categoryAI: "AI & Machine Learning",
+            categoryDatabases: "Databases & Cloud",
+            categoryTools: "Tools & DevOps",
+            langJava: "Java",
+            langPython: "Python",
+            langJavaScript: "JavaScript",
+            langKotlin: "Kotlin",
+            langDart: "Dart",
+            langCSharp: "C#",
+            langHTML: "HTML",
+            langCSS: "CSS",
+            frameworkReact: "React",
+            frameworkReactNative: "React Native",
+            frameworkNode: "Node.js",
+            frameworkFlutter: "Flutter",
+            frameworkSpringBoot: "Spring Boot",
+            frameworkDjango: "Django",
+            frameworkASPNET: "ASP.NET",
+            aiMachineLearning: "Machine Learning",
+            aiDeepLearning: "Deep Learning",
+            aiPandas: "Pandas",
+            aiNumPy: "NumPy",
+            aiScikit: "Scikit-learn",
+            aiTensorFlow: "TensorFlow",
+            dbPostgreSQL: "PostgreSQL",
+            dbMongoDB: "MongoDB",
+            dbFirebase: "Firebase",
+            dbMySQL: "MySQL",
+            dbAWS: "AWS",
+            dbAzure: "Azure",
+            toolDocker: "Docker",
+            toolGit: "Git",
+            toolAndroidStudio: "Android Studio",
+            toolVSCode: "VS Code",
+            toolPostman: "Postman",
+            toolCICD: "CI/CD",
+            blueprintHeader: "The Blueprint: Career Trajectory",
+            job1Title: "Head of Digital Application Division",
+            job1Company: "PSVB Bank",
+            job1Date: "Mar 2023 - Present",
+            job1Desc: "Leading development, integration, and pre-launch testing of mobile/online banking systems. Coordinating cross-functional teams to ensure secure and reliable financial services delivery.",
+            job2Title: "Product Development Staff",
+            job2Company: "KokKok Solution",
+            job2Date: "Oct 2023 - Mar 2023",
+            job2Desc: "Supported new product development through technical research and conducted comprehensive pre-launch testing for features and releases, ensuring optimal performance and user experience.",
+            job3Title: "Internal Auditor Specialist",
+            job3Company: "ACLEDA Bank",
+            job3Date: "Jan 2014 - Oct 2023",
+            job3Desc: "Specialized in Information Security, Digital Banking, and AML/CFT units. Advanced to Branch Internal Auditor Manager, managing comprehensive audits of financial products across Vientiane and Chanthabuly branches.",
+            certHeader: "Skill Accreditations & Continuous Learning",
+            cert1Title: "Android App Development",
+            cert1Date: "Jul 23 - Aug 2, 2024",
+            cert1Desc: "Completed intensive training in Android app development, focusing on Kotlin and Android Studio, building responsive and user-friendly mobile applications.",
+            cert2Title: "Full-Stack Web Development",
+            cert2Date: "Mar 10 - Apr 15, 2024",
+            cert2Desc: "Mastered full-stack development with React, Node.js, and MongoDB, creating scalable web applications with modern architectures.",
+            cert3Title: "AWS Certified Solutions Architect",
+            cert3Date: "Jan 5 - Feb 20, 2024",
+            cert3Desc: "Earned AWS certification with expertise in designing and deploying scalable, highly available systems on AWS cloud infrastructure.",
+            projectsHeader: "Project Showcase",
+            project1Title: "Mobile App",
+            project1Desc: "Developed a secure mobile app using Flutter and Firebase, enabling seamless transactions and real-time notifications for users.",
+            project1Image: "Mobile App",
+            project2Title: "E-Commerce Platform",
+            project2Desc: "Built a full-stack e-commerce platform with React, Node.js, and MongoDB, featuring payment integration and inventory management.",
+            project2Image: "E-Commerce Platform",
+            project3Title: "AI-Powered Chatbot",
+            project3Desc: "Designed an AI-powered chatbot using TensorFlow and Python, integrated with customer service platforms to automate responses.",
+            project3Image: "AI-Powered Chatbot",
+            projectLinkCode: "View Code",
+            projectLinkDemo: "Live Demo",
+            architectureHeader: "Portfolio Architecture",
+            architectureTechTitle: "Technical Approach",
+            architectureTechDesc: "This portfolio is built with a focus on performance, accessibility, and visual appeal. Leveraging HTML5, CSS3, and JavaScript with Three.js for 3D effects, it features a responsive design, glassmorphism aesthetics, and dynamic animations. The site is optimized for SEO and includes a custom language toggle for English and Thai, ensuring inclusivity.",
+            architectureFeaturesTitle: "Key Features",
+            featureResponsive: "Responsive Design",
+            featureGlassmorphism: "Glassmorphism UI",
+            feature3D: "3D Visual Effects",
+            featureLanguage: "Language Toggle (EN/TH)",
+            featureSEO: "SEO Optimized",
+            contactHeader: "Get in Touch",
+            contactText: "Interested in collaborating or have a project in mind? Reach out, and let's build something extraordinary together!",
+            contactEmail: "Send a Message",
+            contactGitHubAria: "GitHub Profile",
+            contactLinkedInAria: "LinkedIn Profile",
+            contactWhatsAppAria: "WhatsApp Contact",
+            footerAboutTitle: "About UknowTechno",
+            footerAboutText: "UknowTechno is the professional alias of Phengsavanh Phanthavong, a full-stack developer and digital architect dedicated to crafting innovative solutions.",
+            footerLinksTitle: "Quick Links",
+            footerConnectTitle: "Connect",
+            footerCopyright: "© 2025 UknowTechno. All rights reserved.",
+            certHeader: "Skill Accreditations & Continuous Learning",
+            cert1Title: "Android App Development",
+            cert1Date: "Jul 23 - Aug 2, 2024",
+            cert1Desc: "Korea Technopark Association & Dept. of Digital Technology",
+            cert2Title: "Advanced Programming Training",
+            cert2Date: "Dec 5-9, 2023",
+            cert2Desc: "Korea Technopark Association & Dept. of Digital Technology",
+            cert3Title: "Java Programming",
+            cert3Date: "Jul 14 - Aug 25, 2023",
+            cert3Desc: "Korea Technopark Association & Dept. of Digital Technology",
+            eduHeader: "Educational Foundation",
+            edu1Title: "Master in Computer Science",
+            edu1Date: "Jan 2023 - Present",
+            edu1Desc: "Faculty of Natural Sciences, National University of Laos",
+            edu2Title: "Bachelor's in English",
+            edu2Date: "2009 - 2014",
+            edu2Desc: "Faculty of Education, National University of Laos"
+        },
+        th: {
+            title: "UknowTechno - สถาปนิกดิจิทัล",
+            menuToggleAria: "สลับเมนูนำทาง",
+            navAbout: "เกี่ยวกับ",
+            navSkills: "ทักษะ",
+            navExperience: "ประสบการณ์",
+            navEducation: "การศึกษา",
+            navProjects: "โครงการ",
+            navContact: "ติดต่อ",
+            navAboutAria: "ไปที่ส่วนเกี่ยวกับ",
+            navSkillsAria: "ไปที่ส่วนทักษะ",
+            navExperienceAria: "ไปที่ส่วนประสบการณ์",
+            navEducationAria: "ไปที่ส่วนการศึกษา",
+            navProjectsAria: "ไปที่ส่วนโครงการ",
+            navContactAria: "ไปที่ส่วนติดต่อ",
+            langToggleAria: "สลับภาษา",
+            themeToggleAria: "สลับธีม",
+            scrollHome: "หน้าแรก",
+            scrollAbout: "เกี่ยวกับ",
+            scrollSkills: "ทักษะ",
+            scrollExperience: "ประสบการณ์",
+            scrollEducation: "การศึกษา",
+            scrollProjects: "โครงการ",
+            scrollPortfolio: "พอร์ตโฟลิโอ",
+            scrollContact: "ติดต่อ",
+            floatTopTitle: "ไปที่ด้านบน",
+            floatBottomTitle: "ไปที่ด้านล่าง",
+            floatWhatsAppTitle: "WhatsApp",
+            floatTopAria: "ไปที่ด้านบนของหน้า",
+            floatBottomAria: "ไปที่ด้านล่างของหน้า",
+            floatWhatsAppAria: "ติดต่อผ่าน WhatsApp",
+            heroFallback: "เอฟเฟกต์ 3 มิติไม่พร้อมใช้งาน สนุกกับพอร์ตโฟลิโอ!",
+            heroName: "เพ็งสวรรค์ พันธวงศ์",
+            heroTagline: "สถาปนิกดิจิทัล | นักพัฒนาฟูลสแต็กที่สร้างโซลูชั่นล้ำสมัย",
+            heroCta: "สำรวจพิมพ์เขียว",
+            heroCtaAria: "สำรวจส่วนเกี่ยวกับ",
+            synopsisHeader: "บทสรุป: จากระบบการเงินสู่แนวหน้าดิจิทัล",
+            profileTitle: "ประวัติส่วนตัว",
+            profileText: "ประสบการณ์กว่า 10 ปีในวงการธนาคาร โดยเชี่ยวชาญด้านระบบดิจิทัล การธนาคารผ่านมือถือ และการธนาคารออนไลน์ ปัจจุบันกำลังศึกษาต่อในระดับปริญญาโทด้านวิทยาการคอมพิวเตอร์ พร้อมทักษะในการพัฒนาซอฟต์แวร์สมัยใหม่ มีความหลงใหลในเทคโนโลยีใหม่ ๆ AI และการเรียนรู้อย่างต่อเนื่องเพื่อขับเคลื่อนนวัตกรรมและประสิทธิภาพ เส้นทางของฉันจากการตรวจสอบระบบการเงินสู่การเป็นนักพัฒนาฟูลสแต็ก ทำให้ฉันมีความเข้าใจอย่างลึกซึ้งในโซลูชั่นที่ปลอดภัยและสามารถขยายขนาดได้ รวมถึงความสามารถในการเชื่อมโยงความต้องการทางธุรกิจกับการนำไปปฏิบัติด้วยเทคโนโลยีล้ำสมัย",
+            interestsTitle: "ความสนใจส่วนตัว",
+            interestTech: "เรียนรู้เทคโนโลยี",
+            interestFootball: "ฟุตบอล",
+            interestAdventure: "การผจญภัย",
+            interestBadminton: "แบดมินตัน",
+            languagesTitle: "ภาษาที่พูดได้",
+            langLao: "ลาว",
+            langThai: "ไทย",
+            langEnglish: "อังกฤษ",
+            proficiencyNative: "เจ้าของภาษา",
+            proficiencyFluent: "คล่องแคล่ว",
+            proficiencyAdvanced: "ขั้นสูง",
+            arsenalHeader: "คลังแสง: สแต็กเทคโนโลยีของฉัน",
+            categoryLanguages: "ภาษาโปรแกรม",
+            categoryFrameworks: "เฟรมเวิร์คและไลบรารี",
+            categoryAI: "AI และแมชชีนเลิร์นนิง",
+            categoryDatabases: "ฐานข้อมูลและคลาวด์",
+            categoryTools: "เครื่องมือและ DevOps",
+            langJava: "จาวา",
+            langPython: "ไพธอน",
+            langJavaScript: "จาวาสคริปต์",
+            langKotlin: "คอทลิน",
+            langDart: "ดาร์ท",
+            langCSharp: "ซีชาร์ป",
+            langHTML: "เอชทีเอ็มแอล",
+            langCSS: "ซีเอสเอส",
+            frameworkReact: "รีแอค",
+            frameworkReactNative: "รีแอคเนทีฟ",
+            frameworkNode: "โหนดเจเอส",
+            frameworkFlutter: "ฟลัตเตอร์",
+            frameworkSpringBoot: "สปริงบูต",
+            frameworkDjango: "จังโก",
+            frameworkASPNET: "เอเอสพีดอทเน็ต",
+            aiMachineLearning: "แมชชีนเลิร์นนิง",
+            aiDeepLearning: "ดีปเลิร์นนิง",
+            aiPandas: "แพนดาส",
+            aiNumPy: "นัมไพ",
+            aiScikit: "ซิกิต-เลิร์น",
+            aiTensorFlow: "เทนเซอร์โฟลว์",
+            dbPostgreSQL: "โพสต์เกรสคิวแอล",
+            dbMongoDB: "มองโกดีบี",
+            dbFirebase: "ไฟร์เบส",
+            dbMySQL: "ไมเอสคิวแอล",
+            dbAWS: "เอดับบลิวเอส",
+            dbAzure: "อะซัวร์",
+            toolDocker: "ด็อกเกอร์",
+            toolGit: "กิต",
+            toolAndroidStudio: "แอนดรอยด์สตูดิโอ",
+            toolVSCode: "วีเอสโค้ด",
+            toolPostman: "โพสต์แมน",
+            toolCICD: "ซีไอ/ซีดี",
+            blueprintHeader: "พิมพ์เขียว: เส้นทางอาชีพ",
+            job1Title: "หัวหน้าฝ่ายแอปพลิเคชันดิจิทัล",
+            job1Company: "ธนาคาร PSVB",
+            job1Date: "มีนาคม 2566 - ปัจจุบัน",
+            job1Desc: "นำการพัฒนา การรวมระบบ และการทดสอบก่อนเปิดตัวระบบธนาคารผ่านมือถือ/ออนไลน์ ประสานงานกับทีมข้ามสายงานเพื่อให้มั่นใจว่าบริการทางการเงินมีความปลอดภัยและเชื่อถือได้",
+            job2Title: "เจ้าหน้าที่พัฒนาผลิตภัณฑ์",
+            job2Company: "โคกโคก โซลูชัน",
+            job2Date: "ตุลาคม 2566 - มีนาคม 2566",
+            job2Desc: "สนับสนุนการพัฒนาผลิตภัณฑ์ใหม่ผ่านการวิจัยด้านเทคนิค และดำเนินการทดสอบก่อนเปิดตัวอย่างครอบคลุมสำหรับฟีเจอร์และการปล่อยซอฟต์แวร์ เพื่อให้มั่นใจถึงประสิทธิภาพและประสบการณ์ผู้ใช้ที่เหมาะสม",
+            job3Title: "ผู้เชี่ยวชาญด้านการตรวจสอบภายใน",
+            job3Company: "ธนาคาร ACLEDA",
+            job3Date: "มกราคม 2557 - ตุลาคม 2566",
+            job3Desc: "เชี่ยวชาญด้านความปลอดภัยข้อมูล การธนาคารดิจิทัล และหน่วย AML/CFT เลื่อนตำแหน่งเป็นผู้จัดการการตรวจสอบภายในสาขา ดูแลการตรวจสอบผลิตภัณฑ์ทางการเงินอย่างครอบคลุมในสาขาเวียงจันทน์และจันทบูลี",
+            certHeader: "การรับรองทักษะ & การเรียนรู้อย่างต่อเนื่อง",
+            cert1Title: "การพัฒนาแอปพลิเคชันแอนดรอยด์",
+            cert1Date: "23 กรกฎาคม - 2 สิงหาคม 2567",
+            cert1Desc: "สำเร็จการฝึกอบรมเข้มข้นด้านการพัฒนาแอปพลิเคชันแอนดรอยด์ โดยมุ่งเน้นที่ Kotlin และ Android Studio ในการสร้างแอปพลิเคชันมือถือที่ตอบสนองและเป็นมิตรกับผู้ใช้",
+            cert2Title: "การพัฒนาเว็บฟูลสแต็ก",
+            cert2Date: "10 มีนาคม - 15 เมษายน 2567",
+            cert2Desc: "เชี่ยวชาญการพัฒนาเว็บฟูลสแต็กด้วย React, Node.js และ MongoDB สร้างแอปพลิเคชันเว็บที่สามารถปรับขนาดได้ด้วยสถาปัตยกรรมสมัยใหม่",
+            cert3Title: "ผู้รับรองโซลูชันสถาปนิก AWS",
+            cert3Date: "5 มกราคม - 20 กุมภาพันธ์ 2567",
+            cert3Desc: "ได้รับการรับรอง AWS ด้วยความเชี่ยวชาญในการออกแบบและปรับใช้ระบบที่สามารถปรับขนาดได้และมีความพร้อมใช้งานสูงบนโครงสร้างพื้นฐานคลาวด์ AWS",
+            projectsHeader: "การแสดงผลงานโครงการ",
+            project1Title: "แอปพลิเคชันบนมือถือ",
+            project1Desc: "พัฒนาแอปพลิเคชันบนมือถือที่ปลอดภัยโดยใช้ Flutter และ Firebase ทำให้สามารถทำธุรกรรมได้อย่างราบรื่นและแจ้งเตือนแบบเรียลไทม์สำหรับผู้ใช้",
+            project1Image: "แอปพลิเคชันบนมือถือ",
+            project2Title: "แพลตฟอร์มอีคอมเมิร์ซ",
+            project2Desc: "สร้างแพลตฟอร์มอีคอมเมิร์ซฟูลสแต็กด้วย React, Node.js และ MongoDB พร้อมการรวมระบบชำระเงินและการจัดการสินค้าคงคลัง",
+            project2Image: "แพลตฟอร์มอีคอมเมิร์ซ",
+            project3Title: "แชทบอทที่ใช้ AI",
+            project3Desc: "ออกแบบแชทบอทที่ใช้ AI โดยใช้ TensorFlow และ Python รวมเข้ากับแพลตฟอร์มบริการลูกค้าเพื่อตอบกลับอัตโนมัติ",
+            project3Image: "แชทบอทที่ใช้ AI",
+            projectLinkCode: "ดูโค้ด",
+            projectLinkDemo: "ตัวอย่างสด",
+            architectureHeader: "สถาปัตยกรรมพอร์ตโฟลิโอ",
+            architectureTechTitle: "แนวทางด้านเทคนิค",
+            architectureTechDesc: "พอร์ตโฟลิโอนี้สร้างขึ้นโดยเน้นที่ประสิทธิภาพ การเข้าถึง และความสวยงามทางสายตา ใช้ HTML5, CSS3 และ JavaScript ร่วมกับ Three.js สำหรับเอฟเฟกต์ 3 มิติ มีการออกแบบที่ตอบสนองต่ออุปกรณ์ ใช้สุนทรียศาสตร์แบบ glassmorphism และแอนิเมชันแบบไดนามิก เว็บไซต์นี้ได้รับการปรับแต่งสำหรับ SEO และมีฟังก์ชันสลับภาษาแบบกำหนดเองสำหรับภาษาอังกฤษและไทย เพื่อให้มั่นใจถึงความครอบคลุม",
+            architectureFeaturesTitle: "คุณสมบัติหลัก",
+            featureResponsive: "การออกแบบที่ตอบสนอง",
+            featureGlassmorphism: "ส่วนต่อประสานแบบ Glassmorphism",
+            feature3D: "เอฟเฟกต์ภาพ 3 มิติ",
+            featureLanguage: "สลับภาษา (EN/TH)",
+            featureSEO: "ปรับแต่ง SEO",
+            contactHeader: "ติดต่อ",
+            contactText: "สนใจที่จะร่วมงานหรือมีโครงการในใจ? ติดต่อมา แล้วมาสร้างบางสิ่งที่ยอดเยี่ยมด้วยกัน!",
+            contactEmail: "ส่งข้อความ",
+            contactGitHubAria: "โปรไฟล์ GitHub",
+            contactLinkedInAria: "โปรไฟล์ LinkedIn",
+            contactWhatsAppAria: "ติดต่อ WhatsApp",
+            footerAboutTitle: "เกี่ยวกับ UknowTechno",
+            footerAboutText: "UknowTechno เป็นนามแฝงมืออาชีพของเพ็งสวรรค์ พันธวงศ์ นักพัฒนาฟูลสแต็กและสถาปนิกดิจิทัลที่ทุ่มเทให้กับการสร้างโซลูชั่นที่สร้างสรรค์",
+            footerLinksTitle: "ลิงก์ด่วน",
+            footerConnectTitle: "เชื่อมต่อ",
+            footerCopyright: "© 2568 UknowTechno. สงวนลิขสิทธิ์",
+            certHeader: "การรับรองทักษะ & การเรียนรู้อย่างต่อเนื่อง",
+            cert1Title: "การพัฒนาแอปพลิเคชันแอนดรอยด์",
+            cert1Date: "23 กรกฎาคม - 2 สิงหาคม 2567",
+            cert1Desc: "สมาคมเทคโนโลยีพาร์คเกาหลี & กรมเทคโนโลยีดิจิทัล",
+            cert2Title: "การฝึกอบรมการเขียนโปรแกรมขั้นสูง",
+            cert2Date: "5-9 ธันวาคม 2566",
+            cert2Desc: "สมาคมเทคโนโลยีพาร์คเกาหลี & กรมเทคโนโลยีดิจิทัล",
+            cert3Title: "การเขียนโปรแกรมจาวา",
+            cert3Date: "14 กรกฎาคม - 25 สิงหาคม 2566",
+            cert3Desc: "สมาคมเทคโนโลยีพาร์คเกาหลี & กรมเทคโนโลยีดิจิทัล",
+            eduHeader: "รากฐานการศึกษา",
+            edu1Title: "ปริญญาโทด้านวิทยาการคอมพิวเตอร์",
+            edu1Date: "มกราคม 2566 - ปัจจุบัน",
+            edu1Desc: "คณะวิทยาศาสตร์ธรรมชาติ มหาวิทยาลัยแห่งชาติลาว",
+            edu2Title: "ปริญญาตรีสาขาภาษาอังกฤษ",
+            edu2Date: "2552 - 2557",
+            edu2Desc: "คณะศึกษาศาสตร์ มหาวิทยาลัยแห่งชาติลาว"
+        }
+    };
+
+    let currentLang = 'en';
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'th' : 'en';
+        document.getElementById('langText').textContent = currentLang.toUpperCase();
+        
+        // Update document title
+        document.title = translations[currentLang].title;
+        
+        // Update all elements with data-en and data-th attributes
+        document.querySelectorAll('[data-en][data-th]').forEach(element => {
+            element.textContent = element.getAttribute(`data-${currentLang}`);
+        });
+        
+        // Update aria-label attributes
+        document.querySelectorAll('[data-aria-label-th]').forEach(element => {
+            element.setAttribute('aria-label', element.getAttribute(`data-aria-label-${currentLang}`));
+        });
+        
+        // Update tooltip attributes for scroll indicators
+        document.querySelectorAll('.scroll-indicator').forEach(indicator => {
+            indicator.setAttribute('data-tooltip', indicator.getAttribute(`data-tooltip-${currentLang}`));
+        });
+        
+        // Update title attributes for floating buttons
+        document.querySelectorAll('.float-btn').forEach(button => {
+            button.setAttribute('title', button.getAttribute(`data-title-${currentLang}`));
+        });
+        
+        // Update menu toggle aria-label
+        const menuToggle = document.querySelector('.menu-toggle');
+        menuToggle.setAttribute('aria-label', translations[currentLang].menuToggleAria);
+    }
+
+    // Theme toggle functionality
+    const themes = ['cyan', 'purple', 'green', 'orange'];
+    let currentTheme = 0;
+
+    function toggleTheme() {
+        currentTheme = (currentTheme + 1) % themes.length;
+        document.body.setAttribute('data-theme', themes[currentTheme]);
+        document.getElementById('themeText').textContent = themes[currentTheme].charAt(0).toUpperCase() + themes[currentTheme].slice(1);
+    }
+
+    // Menu toggle functionality
+    function toggleMenu() {
+        const navMenu = document.getElementById('navMenu');
+        const menuIcon = document.getElementById('menuIcon');
+        const isOpen = navMenu.classList.contains('active');
+        navMenu.classList.toggle('active');
+        menuIcon.textContent = isOpen ? '☰' : '✕';
+        document.querySelector('.menu-toggle').setAttribute('aria-expanded', !isOpen);
+    }
+
+    function closeMenu() {
+        const navMenu = document.getElementById('navMenu');
+        const menuIcon = document.getElementById('menuIcon');
+        navMenu.classList.remove('active');
+        menuIcon.textContent = '☰';
+        document.querySelector('.menu-toggle').setAttribute('aria-expanded', 'false');
+    }
+
+    // Scroll indicator functionality
+    const sections = document.querySelectorAll('section');
+    const indicators = document.querySelectorAll('.scroll-indicator');
+    const scrollIndicators = document.querySelector('.scroll-indicators');
+    let lastScrollTop = 0;
+    const navMenu = document.getElementById('navMenu');
+
+    function handleScroll() {
+        let currentSection = '';
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        
+        // Auto-hide menu on scroll down, show on scroll up
+        if (scrollTop > lastScrollTop && scrollTop > 100) {
+            // Scrolling down - hide menu
+            navMenu.classList.remove('active');
+            document.getElementById('menuIcon').textContent = '☰';
+        } else if (scrollTop < lastScrollTop) {
+            // Scrolling up - show menu if user has scrolled more than 100px
+            if (scrollTop > 100) {
+                navMenu.classList.add('active');
+            }
+        }
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // For mobile or negative scrolling
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.clientHeight;
+            if (scrollTop >= sectionTop - sectionHeight / 3) {
+                currentSection = section.getAttribute('id');
+            }
+        });
+
+        indicators.forEach(indicator => {
+            indicator.classList.remove('active');
+            if (indicator.getAttribute('data-section') === currentSection) {
+                indicator.classList.add('active');
+            }
+        });
+
+        // Smart auto-hide scroll indicators logic like v1
+        const atTop = scrollTop < 100;
+        const atBottom = (window.innerHeight + scrollTop) >= document.body.offsetHeight - 100;
+        const hasActiveIndicator = document.querySelector('.scroll-indicator.active');
+        
+        // Show indicators when:
+        // 1. Not at top/bottom
+        // 2. Has an active section indicator  
+        // 3. User is in the middle of the page
+        const shouldShow = !atTop && !atBottom && hasActiveIndicator && scrollTop > window.innerHeight / 3;
+        
+        if (shouldShow) {
+            scrollIndicators.classList.add('visible');
+            scrollIndicators.classList.remove('hidden');
+        } else {
+            scrollIndicators.classList.add('hidden');
+            scrollIndicators.classList.remove('visible');
+        }
+    }
+
+    indicators.forEach(indicator => {
+        indicator.addEventListener('click', () => {
+            const sectionId = indicator.getAttribute('data-section');
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+            closeMenu();
+        });
+    });
+
+    window.addEventListener('scroll', handleScroll);
+
+    // Custom cursor
+    const cursor = document.querySelector('.custom-cursor');
+    document.addEventListener('mousemove', e => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+    });
+
+    function createParticleBurst(x, y, element) {
+        const burstContainer = document.createElement('div');
+        burstContainer.className = 'particle-burst';
+        burstContainer.style.left = x + 'px';
+        burstContainer.style.top = y + 'px';
+        element.appendChild(burstContainer);
+        
+        const particleCount = 8;
+        const particles = [];
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'burst-particle';
+            
+            const angle = (i / particleCount) * Math.PI * 2;
+            const distance = 30 + Math.random() * 20;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            
+            particle.style.setProperty('--tx', tx + 'px');
+            particle.style.setProperty('--ty', ty + 'px');
+            particle.style.animationDelay = Math.random() * 0.1 + 's';
+            
+            burstContainer.appendChild(particle);
+            particles.push(particle);
+        }
+        
+        setTimeout(() => {
+            if (burstContainer.parentNode) {
+                burstContainer.parentNode.removeChild(burstContainer);
+            }
+        }, 600);
+    }
+    
+    document.addEventListener('mouseover', e => {
+        const techItem = e.target.closest('.tech-item');
+        const projectCard = e.target.closest('.project-card');
+        
+        if (e.target.closest('a, button, .tech-item, .project-card, .timeline-item, .bento-item, .cert-card, .social-link, .float-btn')) {
+            cursor.classList.add('hover');
+            
+            // Create particle burst on hover for tech items and project cards
+            if ((techItem || projectCard) && window.matchMedia('(hover: hover)').matches) {
+                const rect = (techItem || projectCard).getBoundingClientRect();
+                const x = Math.random() * rect.width;
+                const y = Math.random() * rect.height;
+                createParticleBurst(x, y, (techItem || projectCard));
+            }
+        } else {
+            cursor.classList.remove('hover');
+        }
+    });
+
+    // Ripple effect on click
+    document.addEventListener('click', e => {
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        ripple.style.left = e.clientX + 'px';
+        ripple.style.top = e.clientY + 'px';
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+    });
+
+    // Section animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                entry.target.classList.remove('morphing');
+            } else {
+                entry.target.classList.add('morphing');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    sections.forEach(section => observer.observe(section));
+
+    // Matrix rain effect
+    const matrixCanvas = document.getElementById('matrixCanvas');
+    matrixCanvas.width = window.innerWidth;
+    matrixCanvas.height = window.innerHeight;
+    const matrixCtx = matrixCanvas.getContext('2d');
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()_+-=[]{}|;:,.<>?';
+    const fontSize = 14;
+    const columns = matrixCanvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+        matrixCtx.fillStyle = 'rgba(10, 25, 47, 0.05)';
+        matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+        matrixCtx.fillStyle = 'rgba(100, 255, 218, 0.5)';
+        matrixCtx.font = fontSize + 'px JetBrains Mono';
+        drops.forEach((y, i) => {
+            const char = chars.charAt(Math.floor(Math.random() * chars.length));
+            matrixCtx.fillText(char, i * fontSize, y * fontSize);
+            if (y * fontSize > matrixCanvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        });
+    }
+
+    setInterval(drawMatrix, 50);
+
+    // Particle effect
+    const particleCanvas = document.getElementById('particleCanvas');
+    particleCanvas.width = window.innerWidth;
+    particleCanvas.height = window.innerHeight;
+    const particleCtx = particleCanvas.getContext('2d');
+    const particles = [];
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * particleCanvas.width;
+            this.y = Math.random() * particleCanvas.height;
+            this.size = Math.random() * 2 + 1;
+            this.speedX = Math.random() * 2 - 1;
+            this.speedY = Math.random() * 2 - 1;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            if (this.size > 0.2) this.size -= 0.01;
+            if (this.x < 0 || this.x > particleCanvas.width) this.speedX *= -1;
+            if (this.y < 0 || this.y > particleCanvas.height) this.speedY *= -1;
+        }
+        draw() {
+            particleCtx.fillStyle = 'rgba(100, 255, 218, 0.5)';
+            particleCtx.beginPath();
+            particleCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            particleCtx.fill();
+        }
+    }
+
+    function initParticles() {
+        for (let i = 0; i < 100; i++) {
+            particles.push(new Particle());
+        }
+    }
+
+    function animateParticles() {
+        particleCtx.fillStyle = 'rgba(10, 25, 47, 0.05)';
+        particleCtx.fillRect(0, 0, particleCanvas.width, particleCanvas.height);
+        particles.forEach((particle, i) => {
+            particle.update();
+            particle.draw();
+            if (particle.size <= 0.2) {
+                particles.splice(i, 1);
+                particles.push(new Particle());
+            }
+        });
+        requestAnimationFrame(animateParticles);
+    }
+
+    initParticles();
+    animateParticles();
+
+    // Starfield effect
+    const starfieldCanvas = document.getElementById('starfieldCanvas');
+    starfieldCanvas.width = window.innerWidth;
+    starfieldCanvas.height = window.innerHeight;
+    const starfieldCtx = starfieldCanvas.getContext('2d');
+    const stars = [];
+
+    class Star {
+        constructor() {
+            this.x = Math.random() * starfieldCanvas.width;
+            this.y = Math.random() * starfieldCanvas.height;
+            this.size = Math.random() * 2 + 1;
+            this.speed = Math.random() * 0.5 + 0.1;
+        }
+        update() {
+            this.y += this.speed;
+            if (this.y > starfieldCanvas.height) {
+                this.y = 0;
+                this.x = Math.random() * starfieldCanvas.width;
+            }
+        }
+        draw() {
+            starfieldCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            starfieldCtx.beginPath();
+            starfieldCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            starfieldCtx.fill();
+        }
+    }
+
+    function initStars() {
+        for (let i = 0; i < 200; i++) {
+            stars.push(new Star());
+        }
+    }
+
+    function animateStars() {
+        starfieldCtx.fillStyle = 'rgba(10, 25, 47, 0.1)';
+        starfieldCtx.fillRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
+        stars.forEach(star => {
+            star.update();
+            star.draw();
+        });
+        requestAnimationFrame(animateStars);
+    }
+
+    initStars();
+    animateStars();
+
+    // Neural network effect
+    const neuralCanvas = document.getElementById('neuralCanvas');
+    neuralCanvas.width = window.innerWidth;
+    neuralCanvas.height = window.innerHeight;
+    const neuralCtx = neuralCanvas.getContext('2d');
+    const nodes = [];
+
+    class Node {
+        constructor() {
+            this.x = Math.random() * neuralCanvas.width;
+            this.y = Math.random() * neuralCanvas.height;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = Math.random() * 0.5 - 0.25;
+            this.speedY = Math.random() * 0.5 - 0.25;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            if (this.x < 0 || this.x > neuralCanvas.width) this.speedX *= -1;
+            if (this.y < 0 || this.y > neuralCanvas.height) this.speedY *= -1;
+        }
+        draw() {
+            neuralCtx.fillStyle = 'rgba(100, 255, 218, 0.5)';
+            neuralCtx.beginPath();
+            neuralCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            neuralCtx.fill();
+        }
+    }
+
+    function initNeural() {
+        for (let i = 0; i < 50; i++) {
+            nodes.push(new Node());
+        }
+    }
+
+    function animateNeural() {
+        neuralCtx.fillStyle = 'rgba(10, 25, 47, 0.05)';
+        neuralCtx.fillRect(0, 0, neuralCanvas.width, neuralCanvas.height);
+        nodes.forEach(node => {
+            node.update();
+            node.draw();
+            nodes.forEach(otherNode => {
+                const dist = Math.hypot(node.x - otherNode.x, node.y - otherNode.y);
+                if (dist < 100) {
+                    neuralCtx.beginPath();
+                    neuralCtx.moveTo(node.x, node.y);
+                    neuralCtx.lineTo(otherNode.x, otherNode.y);
+                    neuralCtx.strokeStyle = 'rgba(100, 255, 218, 0.2)';
+                    neuralCtx.stroke();
+                }
+            });
+        });
+        requestAnimationFrame(animateNeural);
+    }
+
+    initNeural();
+    animateNeural();
+
+    // Data stream effect
+    const dataStreamCanvas = document.getElementById('dataStreamCanvas');
+    dataStreamCanvas.width = window.innerWidth;
+    dataStreamCanvas.height = window.innerHeight;
+    const dataStreamCtx = dataStreamCanvas.getContext('2d');
+    const streams = [];
+
+    class Stream {
+        constructor() {
+            this.x = Math.random() * dataStreamCanvas.width;
+            this.y = Math.random() * dataStreamCanvas.height;
+            this.size = Math.random() * 2 + 1;
+            this.speed = Math.random() * 2 + 1;
+        }
+        update() {
+            this.y += this.speed;
+            if (this.y > dataStreamCanvas.height) {
+                this.y = 0;
+                this.x = Math.random() * dataStreamCanvas.width;
+            }
+        }
+        draw() {
+            dataStreamCtx.fillStyle = 'rgba(100, 255, 218, 0.5)';
+            dataStreamCtx.beginPath();
+            dataStreamCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            dataStreamCtx.fill();
+        }
+    }
+
+    function initDataStreams() {
+        for (let i = 0; i < 100; i++) {
+            streams.push(new Stream());
+        }
+    }
+
+    function animateDataStreams() {
+        dataStreamCtx.fillStyle = 'rgba(10, 25, 47, 0.05)';
+        dataStreamCtx.fillRect(0, 0, dataStreamCanvas.width, dataStreamCanvas.height);
+        streams.forEach(stream => {
+            stream.update();
+            stream.draw();
+        });
+        requestAnimationFrame(animateDataStreams);
+    }
+
+    initDataStreams();
+    animateDataStreams();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        matrixCanvas.width = window.innerWidth;
+        matrixCanvas.height = window.innerHeight;
+        particleCanvas.width = window.innerWidth;
+        particleCanvas.height = window.innerHeight;
+        starfieldCanvas.width = window.innerWidth;
+        starfieldCanvas.height = window.innerHeight;
+        neuralCanvas.width = window.innerWidth;
+        neuralCanvas.height = window.innerHeight;
+        dataStreamCanvas.width = window.innerWidth;
+        dataStreamCanvas.height = window.innerHeight;
+    });
+
+    // Initial language setup - start with EN
+    // Remove the initial toggle so it starts with EN as default
+    
+    // Typing animation for hero title
+    let typingInterval;
+    
+    function initTypingAnimation(element, text) {
+        // Clear any existing animation
+        if (typingInterval) {
+            clearTimeout(typingInterval);
+        }
+        
+        let i = 0;
+        let isDeleting = false;
+        element.textContent = '';
+        
+        function type() {
+            if (!isDeleting) {
+                // Typing forward
+                if (i < text.length) {
+                    element.textContent = text.slice(0, i + 1);
+                    i++;
+                    typingInterval = setTimeout(type, 150); // Slower typing
+                } else {
+                    // Pause when finished typing
+                    typingInterval = setTimeout(() => {
+                        isDeleting = true;
+                        type();
+                    }, 2000); // Pause for 2 seconds
+                }
+            } else {
+                // Deleting backward
+                if (i > 0) {
+                    element.textContent = text.slice(0, i - 1);
+                    i--;
+                    typingInterval = setTimeout(type, 100); // Faster deleting
+                } else {
+                    // Finished deleting, start over
+                    isDeleting = false;
+                    typingInterval = setTimeout(type, 500); // Pause before restarting
+                }
+            }
+        }
+        
+        // Start typing after initial delay
+        typingInterval = setTimeout(type, 1000);
+    }
+    
+    // Initialize typing animation after page load
+    window.addEventListener('load', () => {
+        const heroTitle = document.querySelector('.hero h1');
+        if (heroTitle) {
+            initTypingAnimation(heroTitle, 'UknowTechno');
+        }
+        // Initialize 3D cube animation
+        init3D();
+    });
+    
+    // 3D Cube Animation Variables
+    let scene, camera, renderer, cube, animationFrameId = null;
+    
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    function init3D() {
+        const container = document.querySelector('.hero-3d');
+        const fallback = document.querySelector('.hero-3d .fallback-content');
+        if (!container || !window.THREE) {
+            if (fallback) fallback.style.display = 'block';
+            console.warn('3D initialization failed: container or THREE.js not found');
+            return;
+        }
+        if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+            console.warn('Container has invalid dimensions, retrying...');
+            setTimeout(init3D, 100);
+            return;
+        }
+        try {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.offsetWidth, container.offsetHeight);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+            
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x64FFDA,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+            
+            const glowGeometry = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x64FFDA,
+                transparent: true,
+                opacity: 0.1
+            });
+            const glowCube = new THREE.Mesh(glowGeometry, glowMaterial);
+            scene.add(glowCube);
+            
+            camera.position.z = 5;
+            
+            let mouseX = 0, mouseY = 0;
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                if (cube && glowCube) {
+                    cube.rotation.x += 0.003 + mouseY * 0.0003; // Slower rotation as requested
+                    cube.rotation.y += 0.003 + mouseX * 0.0003; // Slower rotation as requested
+                    glowCube.rotation.x = cube.rotation.x;
+                    glowCube.rotation.y = cube.rotation.y;
+                }
+                if (renderer && scene && camera) {
+                    renderer.render(scene, camera);
+                }
+            }
+            animate();
+            
+            window.addEventListener('resize', debounce(() => {
+                if (camera && renderer && container) {
+                    camera.aspect = container.offsetWidth / container.offsetHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(container.offsetWidth, container.offsetHeight);
+                }
+            }, 100));
+        } catch (error) {
+            console.error('Error initializing 3D scene:', error);
+            if (fallback) fallback.style.display = 'block';
+        }
+    }
+</script>
+</html>

@@ -1,0 +1,20 @@
+fastapi
+uvicorn==0.27.1
+python-multipart==0.0.9
+pocketbase==0.2.0
+qdrant-client==1.7.3
+sse-starlette==2.0.0
+pypdf==4.0.1
+pandas==2.2.0
+python-docx==1.1.0
+openai==1.12.0
+boto3==1.34.40
+pydantic
+python-dotenv==1.0.1
+# --- Security hardening (Phase 1) ---
+slowapi==0.1.9          # IP-based rate limiting for public endpoints
+httpx==0.26.0           # async client to verify tokens against PocketBase
+# --- RAG pipeline (Phase 2) ---
+sqlite-vec==0.1.9       # vector similarity search as a SQLite extension
+# --- Multi-modal (Phase 5) ---
+faster-whisper==1.0.3   # local speech-to-text (no cloud, no API cost)

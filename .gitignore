@@ -1,0 +1,42 @@
+# ─── Secrets & environment ──────────────────────────────────
+# NEVER commit real credentials. Keep only *.example in git.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ─── Python / FastAPI backend ───────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ─── Node / React frontend ──────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# ─── Databases, vector stores & runtime data ────────────────
+rag.db
+*.sqlite
+*.sqlite3
+pb_data/
+qdrant_storage/
+
+# ─── Backups & archives ─────────────────────────────────────
+*.zip
+uknowtechno_backup_*.zip
+
+# ─── Editor / OS cruft ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
