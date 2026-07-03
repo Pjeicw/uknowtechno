@@ -346,11 +346,12 @@ export default function ChatWidget() {
             className={containerClasses}
             style={containerStyle}
           >
+            {/* Old floating popover disabled — routing status now lives in the sidebar below. */}
             <AnimatePresence>
-              {showSettingsModal && (
+              {false && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-[90]" 
+                  <div
+                    className="fixed inset-0 z-[90]"
                     onClick={() => setShowSettingsModal(false)}
                   />
                   <motion.div
@@ -458,9 +459,42 @@ export default function ChatWidget() {
                     ))}
                   </div>
                   
-                  <div className="p-3 border-t border-[#1e293b] relative mt-auto">
-                    <button onClick={handleOpenSettings} className="w-full flex items-center justify-start gap-3 p-3 rounded-lg hover:bg-[#1e293b]/80 text-gray-400 hover:text-[var(--accent-cyan)] transition-all text-sm font-bold tracking-wide">
-                      <Settings size={18} className="animate-[spin_4s_linear_infinite] hover:animate-none" /> AI SETTINGS
+                  <div className="p-3 border-t border-[#1e293b] mt-auto">
+                    <AnimatePresence>
+                      {showSettingsModal && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mb-2 bg-[#112240] border border-[#1e293b] rounded-xl p-3 whitespace-normal">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Active engine</span>
+                              <button onClick={() => setShowSettingsModal(false)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+                            </div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className={`w-2 h-2 rounded-full ${activeModelConfig === 'Offline' ? 'bg-red-500' : activeModelConfig.includes('Fallback') ? 'bg-yellow-500' : 'bg-[var(--accent-cyan)]'}`}></span>
+                              <span className="text-white text-sm font-medium capitalize">{activeModelConfig.replace('-', ' ')}</span>
+                            </div>
+                            {fallbackReason && (
+                              <div className="mb-3 p-2 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                <div className="text-[10px] text-red-400 font-medium mb-1 uppercase tracking-wide">Reason</div>
+                                <div className="text-xs text-gray-300 mb-2">{fallbackReason}</div>
+                                <button onClick={handleRetry} disabled={isRetrying} className="w-full text-xs font-medium py-1.5 rounded-md bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-all">
+                                  {isRetrying ? 'Retrying…' : 'Retry connection'}
+                                </button>
+                              </div>
+                            )}
+                            <a href="/admin" className="flex items-center justify-center w-full bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] hover:bg-[var(--accent-cyan)]/20 border border-[var(--accent-cyan)]/30 transition-all py-2 rounded-lg text-xs font-medium">
+                              Open admin panel
+                            </a>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <button onClick={handleOpenSettings} className="w-full flex items-center justify-start gap-3 p-3 rounded-lg hover:bg-[#1e293b]/80 text-gray-400 hover:text-[var(--accent-cyan)] transition-all text-sm font-medium">
+                      <Settings size={18} /> AI SETTINGS
                     </button>
                   </div>
                 </motion.div>
