@@ -39,7 +39,9 @@ export default function ChatWidget() {
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([{ id: 'deepseek', label: 'DeepSeek' }]);
   const [kbOptions, setKbOptions] = useState<{ code: string; label: string }[]>([]);
   const [selectedModel, setSelectedModel] = useState('deepseek');
-  const [selectedKb, setSelectedKb] = useState('none');
+  const [selectedKbs, setSelectedKbs] = useState<string[]>([]);
+  const toggleKb = (code: string) =>
+    setSelectedKbs((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -213,7 +215,7 @@ export default function ChatWidget() {
       fd.append('messages', JSON.stringify(newMessages));
       fd.append('smart', String(smartMode));
       fd.append('model', selectedModel);
-      fd.append('kb', selectedKb);
+      fd.append('kb', selectedKbs.join(','));
       for (const f of mediaFiles) {
         fd.append(f.type.startsWith('image/') ? 'image' : 'audio', f);
       }
@@ -223,7 +225,7 @@ export default function ChatWidget() {
       requestInit = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ messages: newMessages, smart: smartMode, model: selectedModel, kb: selectedKb }),
+        body: JSON.stringify({ messages: newMessages, smart: smartMode, model: selectedModel, kb: selectedKbs.join(',') }),
         signal: controller.signal,
       };
     }
@@ -410,9 +412,9 @@ export default function ChatWidget() {
                           exit={{ opacity: 0, height: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="mb-2 bg-[#112240] border border-[#1e293b] rounded-xl p-3 whitespace-normal">
+                          <div className="mb-2 bg-[#112240] border border-[#1e293b] rounded-xl p-3 whitespace-normal max-h-[65vh] overflow-y-auto">
                             <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Active engine</span>
+                              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">AI settings</span>
                               <button onClick={() => setShowSettingsModal(false)} className="text-gray-500 hover:text-white"><X size={14} /></button>
                             </div>
                             <div className="flex items-center gap-2 mb-3">
@@ -428,6 +430,34 @@ export default function ChatWidget() {
                                 </button>
                               </div>
                             )}
+                            <div className="mb-3">
+                              <label className="block text-xs text-[var(--accent-cyan)] mb-1">Model</label>
+                              <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className="w-full h-9 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
+                              >
+                                {modelOptions.map((m) => (
+                                  <option key={m.id} value={m.id} disabled={m.locked}>
+                                    {m.label}{m.locked ? ' 🔒' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="mb-3">
+                              <label className="block text-xs text-[var(--accent-cyan)] mb-1">Knowledge (RAG) · pick any</label>
+                              <div className="flex flex-col gap-1">
+                                {kbOptions.map((k) => (
+                                  <label key={k.code} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#0a192f] border border-[#1e293b] cursor-pointer">
+                                    <input type="checkbox" checked={selectedKbs.includes(k.code)} onChange={() => toggleKb(k.code)} className="accent-[var(--accent-cyan)]" />
+                                    <span className="text-sm text-gray-200">{k.label}</span>
+                                  </label>
+                                ))}
+                                {kbOptions.length === 0 && (
+                                  <div className="text-xs text-gray-500">No knowledge bases yet</div>
+                                )}
+                              </div>
+                            </div>
                             <a href="/admin" className="flex items-center justify-center w-full bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] hover:bg-[var(--accent-cyan)]/20 border border-[var(--accent-cyan)]/30 transition-all py-2 rounded-lg text-xs font-medium">
                               Open admin panel
                             </a>
@@ -463,37 +493,6 @@ export default function ChatWidget() {
                   <button onClick={() => setIsOpen(false)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
                     <X size={24} />
                   </button>
-                </div>
-              </div>
-
-              {/* Model + Knowledge pickers */}
-              <div className="flex flex-wrap gap-4 px-4 py-3 border-b border-[#1e293b] bg-[#0a192f]/40">
-                <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-                  <label className="text-xs text-[var(--accent-cyan)]">Model</label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="h-9 px-3 bg-[#0f172a] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
-                  >
-                    {modelOptions.map((m) => (
-                      <option key={m.id} value={m.id} disabled={m.locked}>
-                        {m.label}{m.locked ? ' 🔒 (needs password)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-                  <label className="text-xs text-[var(--accent-cyan)]">Knowledge</label>
-                  <select
-                    value={selectedKb}
-                    onChange={(e) => setSelectedKb(e.target.value)}
-                    className="h-9 px-3 bg-[#0f172a] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
-                  >
-                    <option value="none">None · model knowledge</option>
-                    {kbOptions.map((k) => (
-                      <option key={k.code} value={k.code}>{k.label}</option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
