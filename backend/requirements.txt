@@ -18,3 +18,6 @@ httpx==0.26.0           # async client to verify tokens against PocketBase
 sqlite-vec==0.1.9       # vector similarity search as a SQLite extension
 # --- Multi-modal (Phase 5) ---
 faster-whisper==1.0.3   # local speech-to-text (no cloud, no API cost)
+# --- Testing ---
+pytest==8.2.2
+pytest-asyncio==0.23.8
