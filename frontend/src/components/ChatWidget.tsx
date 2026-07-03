@@ -35,6 +35,12 @@ export default function ChatWidget() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [smartMode, setSmartMode] = useState(false);  // route this turn to the smart model (G2)
 
+  type ModelOption = { id: string; label: string; locked?: boolean; online?: boolean };
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([{ id: 'deepseek', label: 'DeepSeek' }]);
+  const [kbOptions, setKbOptions] = useState<{ code: string; label: string }[]>([]);
+  const [selectedModel, setSelectedModel] = useState('deepseek');
+  const [selectedKb, setSelectedKb] = useState('none');
+
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/config`);
@@ -50,6 +56,33 @@ export default function ChatWidget() {
       setActiveModelConfig('Offline');
       setFallbackReason("Backend Server Offline");
     }
+  }, []);
+
+  const fetchPickers = useCallback(async () => {
+    try {
+      const staffToken = localStorage.getItem('staff_token');
+      const authHeaders: Record<string, string> = staffToken ? { Authorization: `Bearer ${staffToken}` } : {};
+      const [mRes, kRes] = await Promise.all([
+        fetch(`${API_BASE}/api/models`),
+        fetch(`${API_BASE}/api/knowledge`, { headers: authHeaders }),
+      ]);
+      if (mRes.ok) {
+        const m = await mRes.json();
+        const opts: ModelOption[] = [];
+        for (const c of m.cloud || []) {
+          if (c.id === 'deepseek') opts.push({ id: c.id, label: `${c.label} · default` });
+        }
+        for (const id of m.ollama_models || []) opts.push({ id, label: `Ollama — ${id}`, online: true });
+        for (const c of m.cloud || []) {
+          if (c.id === 'openai') opts.push({ id: c.id, label: c.label, locked: !!c.locked });
+        }
+        setModelOptions(opts.length ? opts : [{ id: 'deepseek', label: 'DeepSeek · default' }]);
+      }
+      if (kRes.ok) {
+        const k = await kRes.json();
+        setKbOptions(k.knowledge_bases || []);
+      }
+    } catch { /* offline: keep defaults */ }
   }, []);
 
   const handleOpenSettings = async (e: React.MouseEvent) => {
@@ -87,6 +120,10 @@ export default function ChatWidget() {
     const interval = setInterval(fetchStatus, 5000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
+
+  useEffect(() => {
+    if (isOpen) fetchPickers();
+  }, [isOpen, fetchPickers]);
 
   const handleNewChat = () => {
     const newId = Date.now().toString();
@@ -175,6 +212,8 @@ export default function ChatWidget() {
       const fd = new FormData();
       fd.append('messages', JSON.stringify(newMessages));
       fd.append('smart', String(smartMode));
+      fd.append('model', selectedModel);
+      fd.append('kb', selectedKb);
       for (const f of mediaFiles) {
         fd.append(f.type.startsWith('image/') ? 'image' : 'audio', f);
       }
@@ -184,7 +223,7 @@ export default function ChatWidget() {
       requestInit = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ messages: newMessages, smart: smartMode }),
+        body: JSON.stringify({ messages: newMessages, smart: smartMode, model: selectedModel, kb: selectedKb }),
         signal: controller.signal,
       };
     }
@@ -448,6 +487,37 @@ export default function ChatWidget() {
                   <button onClick={() => setIsOpen(false)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
                     <X size={24} />
                   </button>
+                </div>
+              </div>
+
+              {/* Model + Knowledge pickers */}
+              <div className="flex flex-wrap gap-4 px-4 py-3 border-b border-[#1e293b] bg-[#0a192f]/40">
+                <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                  <label className="text-xs text-[var(--accent-cyan)]">Model</label>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="h-9 px-3 bg-[#0f172a] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
+                  >
+                    {modelOptions.map((m) => (
+                      <option key={m.id} value={m.id} disabled={m.locked}>
+                        {m.label}{m.locked ? ' 🔒 (needs password)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                  <label className="text-xs text-[var(--accent-cyan)]">Knowledge</label>
+                  <select
+                    value={selectedKb}
+                    onChange={(e) => setSelectedKb(e.target.value)}
+                    className="h-9 px-3 bg-[#0f172a] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
+                  >
+                    <option value="none">None · model knowledge</option>
+                    {kbOptions.map((k) => (
+                      <option key={k.code} value={k.code}>{k.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
