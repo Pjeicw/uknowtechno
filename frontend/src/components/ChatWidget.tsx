@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { MessageSquare, X, Send, Paperclip, Mic, Maximize2, Minimize2, PanelLeftClose, PanelLeft, Plus, Edit2, Trash2, Check, Copy, Share2, Settings, Sparkles } from 'lucide-react';
+import { MessageSquare, X, Send, Paperclip, Mic, Maximize2, Minimize2, PanelLeftClose, PanelLeft, Plus, Edit2, Trash2, Check, Copy, Share2, Settings, Sparkles, ChevronLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 type Message = { role: 'user' | 'ai'; content: string };
@@ -453,17 +453,20 @@ export default function ChatWidget() {
                           exit={{ opacity: 0, height: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="mb-2 bg-[#112240] border border-[#1e293b] rounded-xl p-3 whitespace-normal max-h-[65vh] overflow-y-auto">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">AI settings</span>
-                              <button onClick={() => setShowSettingsModal(false)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+                          <div className="mb-2 bg-[#112240] border border-[#1e293b] rounded-xl whitespace-normal max-h-[65vh] overflow-y-auto">
+                            <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-3 border-b border-[#1e293b] bg-[#112240] rounded-t-xl">
+                              <button onClick={() => setShowSettingsModal(false)} className="-ml-1 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors" title="Back">
+                                <ChevronLeft size={18} />
+                              </button>
+                              <span className="text-sm font-semibold text-white">AI settings</span>
                             </div>
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="p-4">
+                            <div className="flex items-center gap-2 mb-4">
                               <span className={`w-2 h-2 rounded-full ${activeModelConfig === 'Offline' ? 'bg-red-500' : activeModelConfig.includes('Fallback') ? 'bg-yellow-500' : 'bg-[var(--accent-cyan)]'}`}></span>
                               <span className="text-white text-sm font-medium capitalize">{activeModelConfig.replace('-', ' ')}</span>
                             </div>
                             {fallbackReason && (
-                              <div className="mb-3 p-2 bg-red-900/20 border border-red-500/30 rounded-lg">
+                              <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
                                 <div className="text-[10px] text-red-400 font-medium mb-1 uppercase tracking-wide">Reason</div>
                                 <div className="text-xs text-gray-300 mb-2">{fallbackReason}</div>
                                 <button onClick={handleRetry} disabled={isRetrying} className="w-full text-xs font-medium py-1.5 rounded-md bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-all">
@@ -471,8 +474,8 @@ export default function ChatWidget() {
                                 </button>
                               </div>
                             )}
-                            <div className="mb-3">
-                              <label className="block text-xs text-[var(--accent-cyan)] mb-1">Model</label>
+                            <div className="mb-4">
+                              <label className="block text-xs text-[var(--accent-cyan)] mb-1.5">Model</label>
                               <select
                                 value={selectedModel}
                                 onChange={(e) => setSelectedModel(e.target.value)}
@@ -485,8 +488,8 @@ export default function ChatWidget() {
                                 ))}
                               </select>
                             </div>
-                            <div className="mb-3">
-                              <label className="block text-xs text-[var(--accent-cyan)] mb-1">Knowledge (RAG) · pick any</label>
+                            <div className="mb-4">
+                              <label className="block text-xs text-[var(--accent-cyan)] mb-1.5">Knowledge (RAG) · pick any</label>
                               <div className="flex flex-col gap-1">
                                 {kbOptions.map((k) => (
                                   <label key={k.code} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#0a192f] border border-[#1e293b] cursor-pointer">
@@ -553,6 +556,7 @@ export default function ChatWidget() {
                                   <div className="text-[11px] text-gray-500">Opens the admin page after login.</div>
                                 </div>
                               )}
+                            </div>
                             </div>
                           </div>
                         </motion.div>
