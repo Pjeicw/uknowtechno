@@ -729,12 +729,16 @@ async def chat_endpoint(request: Request):
     images: list = []   # list of (mime_type, raw_bytes)
     audio_text = ""
     smart_flag = False  # "smart mode" toggle from the UI (G2)
+    model_choice = None  # per-request model pick from the chat UI
+    kb_choice = None     # per-request knowledge-base pick from the chat UI
     content_type = request.headers.get("content-type", "")
 
     if "multipart/form-data" in content_type:
         form = await request.form()
         messages = json.loads(form.get("messages") or "[]")
         smart_flag = str(form.get("smart", "")).lower() in ("1", "true", "yes")
+        model_choice = form.get("model") or None
+        kb_choice = form.get("kb") or None
         # Voice: transcribe locally, then treat as text (Phase 5).
         audio = form.get("audio")
         if audio is not None:
@@ -752,6 +756,8 @@ async def chat_endpoint(request: Request):
         body = await request.json()
         messages = body.get("messages", [])
         smart_flag = bool(body.get("smart", False))
+        model_choice = body.get("model") or None
+        kb_choice = body.get("kb") or None
 
     # Map 'ai' role from frontend to 'assistant' for OpenAI SDK compatibility
     for msg in messages:
@@ -760,6 +766,11 @@ async def chat_endpoint(request: Request):
 
     app_cfg = load_config()
     routing_model = app_cfg["active_model"]
+
+    # Per-request model pick (public). OpenAI is blocked until the unlock gate.
+    forced_first, forced_local_pref, model_blocked = resolve_model_choice(model_choice)
+    if model_blocked:
+        raise HTTPException(status_code=403, detail="OpenAI requires a password unlock (coming soon).")
 
     # Locate the latest user message; fold in any transcription.
     last_user_idx = next(
@@ -788,7 +799,9 @@ async def chat_endpoint(request: Request):
     want_smart = smart_flag or (app_cfg.get("auto_lao_to_smart", True) and is_lao(last_user_text))
     local_models = app_cfg.get("local_models", {})
     # Manual mode = always the admin-chosen model; Auto = use-case routing.
-    if app_cfg.get("model_mode", "auto") == "manual" and app_cfg.get("local_model_default"):
+    if forced_local_pref:
+        local_model_pref = forced_local_pref
+    elif app_cfg.get("model_mode", "auto") == "manual" and app_cfg.get("local_model_default"):
         local_model_pref = app_cfg["local_model_default"]
     else:
         local_model_pref = local_models.get(intent) or local_models.get("general")
@@ -827,6 +840,8 @@ async def chat_endpoint(request: Request):
                 candidates = [routing_model]
             finally:
                 budget_con.close()
+            if forced_first:
+                candidates = [forced_first] + [m for m in candidates if m != forced_first]
 
         # Walk the chain: first tier that connects wins. A tier that fails to
         # start (Ollama down, bad key, etc.) advances to the next.
