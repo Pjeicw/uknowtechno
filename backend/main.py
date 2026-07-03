@@ -342,7 +342,7 @@ async def resolve_role(request: Request) -> str:
     return "public"
 
 
-async def retrieve_context(query: str, allowed_levels: list = None) -> str:
+async def retrieve_context(query: str, allowed_levels: list = None, kb_code: str = None) -> str:
     """Return a formatted context block for `query`, or '' if RAG is unavailable.
 
     `allowed_levels` gates results by access level (role-based, G3); defaults to
@@ -355,7 +355,7 @@ async def retrieve_context(query: str, allowed_levels: list = None) -> str:
         query_vec = await embed_text(query)
         con = rag_store.connect()
         try:
-            hits = rag_store.search(con, query_vec, k=RAG_TOP_K, allowed_levels=allowed_levels)
+            hits = rag_store.search(con, query_vec, k=RAG_TOP_K, kb_code=kb_code, allowed_levels=allowed_levels)
         finally:
             con.close()
     except Exception as e:
@@ -808,7 +808,8 @@ async def chat_endpoint(request: Request):
     print(f"Chat routing: role={role} mode={app_cfg.get('model_mode','auto')} intent={intent} want_smart={want_smart} local_pref={local_model_pref}")
 
     # --- RAG: retrieve context for the latest user turn (Phase 2 + G3) -------
-    rag_context = await retrieve_context(last_user_text, allowed_levels=allowed_levels)
+    selected_kb = kb_choice if (kb_choice and kb_choice != "none") else None
+    rag_context = await retrieve_context(last_user_text, allowed_levels=allowed_levels, kb_code=selected_kb)
 
     # Images: convert the latest user turn into a vision content array (Phase 5).
     if vision_mode and last_user_idx is not None:
