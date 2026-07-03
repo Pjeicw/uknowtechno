@@ -280,6 +280,23 @@ def resolve_model_choice(model_choice: Optional[str]):
     return ("ollama-local", model_choice, False)
 
 
+def parse_kb_selection(value):
+    """Turn a chat request's knowledge field into a clean list of KB codes.
+
+    Accepts a comma-separated string or a list; 'none'/empty entries are
+    dropped. Returns [] when nothing (real) is selected.
+    """
+    if not value:
+        return []
+    items = value if isinstance(value, list) else str(value).split(",")
+    out = []
+    for it in items:
+        code = str(it).strip()
+        if code and code.lower() != "none":
+            out.append(code)
+    return out
+
+
 async def resolve_client(target_model: str, local_model_pref: str = None):
     """Return (client, model_name, provider) for a model, probing Ollama for a
     live local model. Raises if the tier is unavailable so the caller advances."""
@@ -342,7 +359,7 @@ async def resolve_role(request: Request) -> str:
     return "public"
 
 
-async def retrieve_context(query: str, allowed_levels: list = None, kb_code: str = None) -> str:
+async def retrieve_context(query: str, allowed_levels: list = None, kb_codes: list = None) -> str:
     """Return a formatted context block for `query`, or '' if RAG is unavailable.
 
     `allowed_levels` gates results by access level (role-based, G3); defaults to
@@ -355,7 +372,7 @@ async def retrieve_context(query: str, allowed_levels: list = None, kb_code: str
         query_vec = await embed_text(query)
         con = rag_store.connect()
         try:
-            hits = rag_store.search(con, query_vec, k=RAG_TOP_K, kb_code=kb_code, allowed_levels=allowed_levels)
+            hits = rag_store.search(con, query_vec, k=RAG_TOP_K, kb_codes=kb_codes, allowed_levels=allowed_levels)
         finally:
             con.close()
     except Exception as e:
@@ -847,8 +864,8 @@ async def chat_endpoint(request: Request):
     print(f"Chat routing: role={role} mode={app_cfg.get('model_mode','auto')} intent={intent} want_smart={want_smart} local_pref={local_model_pref}")
 
     # --- RAG: retrieve context for the latest user turn (Phase 2 + G3) -------
-    selected_kb = kb_choice if (kb_choice and kb_choice != "none") else None
-    rag_context = await retrieve_context(last_user_text, allowed_levels=allowed_levels, kb_code=selected_kb)
+    selected_kbs = parse_kb_selection(kb_choice)
+    rag_context = await retrieve_context(last_user_text, allowed_levels=allowed_levels, kb_codes=selected_kbs)
 
     # Images: convert the latest user turn into a vision content array (Phase 5).
     if vision_mode and last_user_idx is not None:

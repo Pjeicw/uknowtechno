@@ -314,7 +314,7 @@ def search(
     con: sqlite3.Connection,
     query_embedding: List[float],
     k: int = 4,
-    kb_code: Optional[str] = None,
+    kb_codes: Optional[List[str]] = None,
     allowed_levels: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """Return the top-k most similar chunks the caller is allowed to see.
@@ -327,6 +327,13 @@ def search(
     serialized = sqlite_vec.serialize_float32(query_embedding)
     over = max(k * 8, k)  # over-fetch so post-filters still yield k results
     placeholders = ",".join("?" for _ in allowed_levels)
+    # Optional filter to one or more knowledge bases (RAG multi-select).
+    kb_filter = ""
+    kb_params: List[str] = []
+    if kb_codes:
+        kb_ph = ",".join("?" for _ in kb_codes)
+        kb_filter = f"AND kb.code IN ({kb_ph})"
+        kb_params = list(kb_codes)
     rows = con.execute(
         f"""
         WITH knn AS (
@@ -346,12 +353,12 @@ def search(
         JOIN documents d        ON d.id = dc.document_id
         JOIN knowledge_bases kb ON kb.id = dc.knowledge_base_id
         WHERE dc.is_enabled = 1
-          AND (? IS NULL OR kb.code = ?)
+          {kb_filter}
           AND dc.access_level IN ({placeholders})
         ORDER BY knn.distance ASC
         LIMIT ?
         """,
-        (serialized, over, kb_code, kb_code, *allowed_levels, k),
+        (serialized, over, *kb_params, *allowed_levels, k),
     ).fetchall()
     return [dict(r) for r in rows]
 
