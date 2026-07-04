@@ -304,17 +304,17 @@ def build_fallback_chain(cfg: dict, con, want_smart: bool = False) -> list:
 
 
 def resolve_model_choice(model_choice: Optional[str]):
-    """Map a visitor's model pick to (forced_first, local_pref, blocked).
+    """Map a visitor's model pick to (forced_first, local_pref, needs_admin).
 
-    `blocked=True` means the choice is not allowed from the public chat yet
-    (OpenAI needs a password unlock — a later feature). 'auto'/empty = no
-    override. 'deepseek' forces the cloud default first. Anything else is
-    treated as a specific local Ollama model id.
+    `needs_admin=True` means the choice is only allowed when the caller is a
+    logged-in admin (OpenAI). 'auto'/empty = no override. 'deepseek' forces
+    the cloud default first. Anything else is treated as a specific local
+    Ollama model id.
     """
     if not model_choice or model_choice == "auto":
         return (None, None, False)
     if model_choice == "openai":
-        return (None, None, True)
+        return ("openai", None, True)
     if model_choice == "deepseek":
         return ("deepseek", None, False)
     return ("ollama-local", model_choice, False)
@@ -382,11 +382,15 @@ async def resolve_role(request: Request) -> str:
     """Resolve the caller's role from an optional PocketBase user token (G3).
 
     No/invalid token -> 'public'. A valid staff token -> its role field, or
-    'staff' if the record has no role. Fails to 'public' (least privilege)."""
+    'staff' if the record has no role. A valid admin (superuser) token ->
+    'admin'. Fails to 'public' (least privilege)."""
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         return "public"
     token = auth.split(" ", 1)[1].strip()
+    # Local-dev bypass mirrors the admin-endpoint bypass (empty in production).
+    if ADMIN_DEV_TOKEN and token == ADMIN_DEV_TOKEN:
+        return "admin"
     url = f"{POCKETBASE_URL}/api/collections/{POCKETBASE_USER_COLLECTION}/auth-refresh"
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -396,6 +400,16 @@ async def resolve_role(request: Request) -> str:
             return record.get(POCKETBASE_ROLE_FIELD) or "staff"
     except Exception as e:
         print(f"Role resolution failed (defaulting to public): {e}")
+    # Not a staff token — it may be an admin (superuser) token from the
+    # chat's admin login. Admins get full knowledge access + OpenAI unlock.
+    admin_url = f"{POCKETBASE_URL}/api/collections/{POCKETBASE_ADMIN_COLLECTION}/auth-refresh"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(admin_url, headers={"Authorization": token})
+        if resp.status_code == 200:
+            return "admin"
+    except Exception as e:
+        print(f"Admin role resolution failed (defaulting to public): {e}")
     return "public"
 
 
@@ -863,10 +877,15 @@ async def chat_endpoint(request: Request):
     app_cfg = load_config()
     routing_model = app_cfg["active_model"]
 
-    # Per-request model pick (public). OpenAI is blocked until the unlock gate.
-    forced_first, forced_local_pref, model_blocked = resolve_model_choice(model_choice)
-    if model_blocked:
-        raise HTTPException(status_code=403, detail="OpenAI requires a password unlock (coming soon).")
+    # Per-request model pick. OpenAI is admin-only: logging in via the chat's
+    # AI settings unlocks it; public visitors get a 403.
+    forced_first, forced_local_pref, needs_admin = resolve_model_choice(model_choice)
+    role = await resolve_role(request)
+    if needs_admin and role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="OpenAI is admin-only. Log in via AI settings → Admin login to use it.",
+        )
 
     # Locate the latest user message; fold in any transcription.
     last_user_idx = next(
@@ -886,8 +905,8 @@ async def chat_endpoint(request: Request):
     last_user_text = last_user_text if isinstance(last_user_text, str) else ""
     vision_mode = bool(images)
 
-    # Role-gated retrieval (G3): resolve caller's role -> allowed access levels.
-    role = await resolve_role(request)
+    # Role-gated retrieval (G3): map the caller's role (resolved above) to
+    # the knowledge access levels they may see.
     allowed_levels = rag_store.levels_for_role(role)
 
     # Routing signals (G1/G2): intent + whether to prefer the smart model.

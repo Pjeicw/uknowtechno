@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Shield, Activity, Database, Server, BarChart2, Trash2, Search, Cpu, RefreshCw, CheckCircle, XCircle, FileText, UploadCloud, Layers, LogOut, Zap, AlertTriangle } from 'lucide-react';
 
@@ -342,7 +342,7 @@ export default function AdminPanel() {
             </div>
             <div>
               <label className="block text-[var(--accent-cyan)]/80 mb-2 text-xs font-black tracking-widest"> {t('adminPassphrase')} </label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0a192f]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 text-white outline-none focus:border-[var(--accent-cyan)] focus:shadow-[0_0_15px_rgba(100,255,218,0.2)] transition-all" placeholder="••••••••••••" />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0a192f]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 text-white outline-none focus:border-[var(--accent-cyan)] focus:shadow-[0_0_15px_rgba(100,255,218,0.2)] transition-all" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" />
             </div>
             {loginError && (
               <div className="text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2">
@@ -357,7 +357,7 @@ export default function AdminPanel() {
           {/* Local-dev access (no PocketBase needed) */}
           <div className="mt-6 pt-5 border-t border-[#1e293b] relative z-10">
             <button type="button" onClick={() => setShowDev((s) => !s)} className="text-xs text-gray-500 hover:text-[var(--accent-cyan)] font-bold tracking-widest transition-colors">
-              {showDev ? '▾' : '▸'} LOCAL DEV ACCESS
+              {showDev ? 'â–¾' : 'â–¸'} LOCAL DEV ACCESS
             </button>
             {showDev && (
               <div className="mt-3 flex gap-2">
@@ -378,18 +378,18 @@ export default function AdminPanel() {
   );
 
   return (
-    <div className="flex w-full h-full min-h-[600px] max-h-[850px] gap-8 max-w-[1500px] mx-auto relative z-10 px-8 justify-center">
-      {/* Sidebar Navigation */}
-      <div className="w-72 shrink-0 flex flex-col gap-4">
-        <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--accent-cyan)] mb-8 px-4 flex items-center gap-4 drop-shadow-[0_0_10px_rgba(100,255,218,0.3)]">
+    <div className="flex flex-col md:flex-row w-full h-full min-h-[600px] md:max-h-[850px] gap-4 md:gap-8 max-w-[1500px] mx-auto relative z-10 px-1 md:px-8 justify-center">
+      {/* Sidebar Navigation â€” becomes a horizontal tab bar on phones */}
+      <div className="w-full md:w-72 shrink-0 flex flex-row md:flex-col gap-2 md:gap-4 overflow-x-auto md:overflow-visible">
+        <h2 className="hidden md:flex text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--accent-cyan)] mb-8 px-4 items-center gap-4 drop-shadow-[0_0_10px_rgba(100,255,218,0.3)]">
           <Server className="text-[var(--accent-cyan)]" size={32} /> ADMIN
         </h2>
 
-        <button onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm ${activeTab === 'dashboard' ? 'bg-[var(--accent-cyan)] text-[#0a192f] shadow-[0_0_30px_rgba(100,255,218,0.4)] scale-105' : 'bg-[#112240]/60 text-gray-400 hover:bg-[#1e293b] hover:text-white border border-[#1e293b] hover:border-[var(--accent-cyan)]/30'}`}>
+        <button onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-2 md:gap-4 p-3 md:p-5 rounded-2xl font-black tracking-widest transition-all text-xs md:text-sm whitespace-nowrap shrink-0 ${activeTab === 'dashboard' ? 'bg-[var(--accent-cyan)] text-[#0a192f] shadow-[0_0_30px_rgba(100,255,218,0.4)] scale-105' : 'bg-[#112240]/60 text-gray-400 hover:bg-[#1e293b] hover:text-white border border-[#1e293b] hover:border-[var(--accent-cyan)]/30'}`}>
           <Activity size={22} /> {t('adminDashboard')} </button>
-        <button onClick={() => setActiveTab('models')} className={`flex items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm ${activeTab === 'models' ? 'bg-[var(--accent-cyan)] text-[#0a192f] shadow-[0_0_30px_rgba(100,255,218,0.4)] scale-105' : 'bg-[#112240]/60 text-gray-400 hover:bg-[#1e293b] hover:text-white border border-[#1e293b] hover:border-[var(--accent-cyan)]/30'}`}>
+        <button onClick={() => setActiveTab('models')} className={`flex items-center gap-2 md:gap-4 p-3 md:p-5 rounded-2xl font-black tracking-widest transition-all text-xs md:text-sm whitespace-nowrap shrink-0 ${activeTab === 'models' ? 'bg-[var(--accent-cyan)] text-[#0a192f] shadow-[0_0_30px_rgba(100,255,218,0.4)] scale-105' : 'bg-[#112240]/60 text-gray-400 hover:bg-[#1e293b] hover:text-white border border-[#1e293b] hover:border-[var(--accent-cyan)]/30'}`}>
           <BarChart2 size={22} /> {t('adminAiModels')} </button>
-        <button onClick={() => setActiveTab('rag')} className={`flex items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm ${activeTab === 'rag' ? 'bg-[var(--accent-cyan)] text-[#0a192f] shadow-[0_0_30px_rgba(100,255,218,0.4)] scale-105' : 'bg-[#112240]/60 text-gray-400 hover:bg-[#1e293b] hover:text-white border border-[#1e293b] hover:border-[var(--accent-cyan)]/30'}`}>
+        <button onClick={() => setActiveTab('rag')} className={`flex items-center gap-2 md:gap-4 p-3 md:p-5 rounded-2xl font-black tracking-widest transition-all text-xs md:text-sm whitespace-nowrap shrink-0 ${activeTab === 'rag' ? 'bg-[var(--accent-cyan)] text-[#0a192f] shadow-[0_0_30px_rgba(100,255,218,0.4)] scale-105' : 'bg-[#112240]/60 text-gray-400 hover:bg-[#1e293b] hover:text-white border border-[#1e293b] hover:border-[var(--accent-cyan)]/30'}`}>
           <Database size={22} /> {t('adminKnowledge')} </button>
 
         <div className="mt-auto">
@@ -399,7 +399,7 @@ export default function AdminPanel() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-[#0a192f]/90 backdrop-blur-xl rounded-[2rem] border border-[var(--accent-cyan)]/10 p-10 overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
+      <div className="flex-1 bg-[#0a192f]/90 backdrop-blur-xl rounded-[2rem] border border-[var(--accent-cyan)]/10 p-4 md:p-10 overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.8)] relative">
         <div className="absolute inset-0 bg-gradient-to-b from-[var(--accent-cyan)]/5 to-transparent pointer-events-none rounded-[2rem]"></div>
 
         {/* DASHBOARD TAB */}
@@ -437,7 +437,7 @@ export default function AdminPanel() {
           <div className="space-y-10 animate-[fadeIn_0.3s_ease-out] relative z-10">
             <h3 className="text-4xl font-black text-white tracking-widest border-b border-[#1e293b] pb-6"> {t('adminAiRouting')} </h3>
 
-            {/* Active model selector — live installed-model dropdown */}
+            {/* Active model selector â€” live installed-model dropdown */}
             <div className="bg-[#112240]/80 backdrop-blur-xl p-8 rounded-[2rem] border border-[var(--accent-cyan)]/40">
               <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <h4 className="text-2xl font-black text-white tracking-widest flex items-center gap-3"><Cpu className="text-[var(--accent-cyan)]" size={24} /> ACTIVE MODEL</h4>
@@ -445,8 +445,8 @@ export default function AdminPanel() {
                   <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black border ${modelsInfo.ollama_online ? 'text-green-400 border-green-500/40 bg-green-500/10' : 'text-red-400 border-red-500/40 bg-red-500/10'}`}>
                     {modelsInfo.ollama_online ? <CheckCircle size={14} /> : <XCircle size={14} />} Ollama {modelsInfo.ollama_online ? 'ONLINE' : 'OFFLINE'}
                   </span>
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-black border ${modelsInfo.providers.deepseek ? 'text-blue-400 border-blue-500/40 bg-blue-500/10' : 'text-gray-500 border-gray-600/40'}`}>DeepSeek key {modelsInfo.providers.deepseek ? '✓' : '✕'}</span>
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-black border ${modelsInfo.providers.openai ? 'text-purple-400 border-purple-500/40 bg-purple-500/10' : 'text-gray-500 border-gray-600/40'}`}>OpenAI key {modelsInfo.providers.openai ? '✓' : '✕'}</span>
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-black border ${modelsInfo.providers.deepseek ? 'text-blue-400 border-blue-500/40 bg-blue-500/10' : 'text-gray-500 border-gray-600/40'}`}>DeepSeek key {modelsInfo.providers.deepseek ? 'âœ“' : 'âœ•'}</span>
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-black border ${modelsInfo.providers.openai ? 'text-purple-400 border-purple-500/40 bg-purple-500/10' : 'text-gray-500 border-gray-600/40'}`}>OpenAI key {modelsInfo.providers.openai ? 'âœ“' : 'âœ•'}</span>
                   <button onClick={loadModels} className="p-2 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors" title="Refresh"><RefreshCw size={16} /></button>
                 </div>
               </div>
@@ -457,23 +457,23 @@ export default function AdminPanel() {
                 onChange={(e) => selectModel(e.target.value)}
                 className="w-full bg-[#0a192f] border border-[#1e293b] rounded-xl p-4 text-white font-bold outline-none focus:border-[var(--accent-cyan)] transition-all cursor-pointer"
               >
-                <option value="auto">🤖 Auto — smart use-case routing (coding→coder, Lao→cloud)</option>
+                <option value="auto">ðŸ¤– Auto â€” smart use-case routing (codingâ†’coder, Laoâ†’cloud)</option>
                 {modelsInfo.installed_models.length > 0 && (
                   <optgroup label="Your installed Ollama models">
-                    {modelsInfo.installed_models.map((m) => <option key={m} value={m}>💻 {m} (always use this)</option>)}
+                    {modelsInfo.installed_models.map((m) => <option key={m} value={m}>ðŸ’» {m} (always use this)</option>)}
                   </optgroup>
                 )}
               </select>
 
               {!modelsInfo.ollama_online && (
                 <div className="mt-4 text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                  Ollama isn't reachable at <span className="font-mono">{modelsInfo.ollama_host || 'the configured host'}</span>. Chats will fall back to DeepSeek → OpenAI automatically. Start Ollama on your ASUS (and check <span className="font-mono">OLLAMA_API_URL</span>) to use local models.
+                  Ollama isn't reachable at <span className="font-mono">{modelsInfo.ollama_host || 'the configured host'}</span>. Chats will fall back to DeepSeek â†’ OpenAI automatically. Start Ollama on your ASUS (and check <span className="font-mono">OLLAMA_API_URL</span>) to use local models.
                 </div>
               )}
-              <p className="mt-4 text-xs text-gray-500">Failover order: <span className="text-gray-300 font-mono">{modelMode === 'manual' ? localModelDefault : 'auto-local'} → deepseek → openai</span>. Cloud tiers are skipped when over budget.</p>
+              <p className="mt-4 text-xs text-gray-500">Failover order: <span className="text-gray-300 font-mono">{modelMode === 'manual' ? localModelDefault : 'auto-local'} â†’ deepseek â†’ openai</span>. Cloud tiers are skipped when over budget.</p>
             </div>
 
-            {/* Local model routing map (G1) + Lao auto-route (G2) — only relevant in Auto */}
+            {/* Local model routing map (G1) + Lao auto-route (G2) â€” only relevant in Auto */}
             <div className="bg-[#112240]/80 backdrop-blur-xl p-8 rounded-[2rem] border border-[var(--accent-cyan)]/30">
               <h4 className="text-2xl font-black text-white tracking-widest mb-2 flex items-center gap-3"><Cpu className="text-[var(--accent-cyan)]" size={24} /> USE-CASE ROUTING <span className={`text-xs px-2 py-1 rounded ${modelMode === 'auto' ? 'bg-green-500/20 text-green-400' : 'bg-gray-600/30 text-gray-500'}`}>{modelMode === 'auto' ? 'ACTIVE' : 'Auto mode only'}</span></h4>
               <p className="text-gray-400 text-sm mb-6">When Active Model is set to <b>Auto</b>, these decide which local model handles each kind of question. Must match a model you've pulled.</p>
@@ -500,7 +500,7 @@ export default function AdminPanel() {
 
             <div className="grid grid-cols-1 gap-8">
               {/* Ollama Local */}
-              <div className="bg-[#112240]/80 backdrop-blur-xl p-10 rounded-[2rem] border border-green-500/30 relative overflow-hidden group">
+              <div className="bg-[#112240]/80 backdrop-blur-xl p-5 md:p-10 rounded-[2rem] border border-green-500/30 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 flex flex-col items-end gap-4">
                   <div className="px-5 py-2.5 bg-green-500/20 text-green-400 rounded-full text-sm font-black tracking-widest border border-green-500/50">
                     <label className="flex items-center gap-3 cursor-pointer">
@@ -512,13 +512,13 @@ export default function AdminPanel() {
                   <div className="w-20 h-20 bg-green-500/10 rounded-3xl flex items-center justify-center text-green-400"><Cpu size={40} /></div>
                   <div>
                     <h4 className="text-3xl font-black text-white tracking-widest mb-2">Ollama Local</h4>
-                    <p className="text-gray-400 font-bold tracking-wide">Privacy First • Free</p>
+                    <p className="text-gray-400 font-bold tracking-wide">Privacy First â€¢ Free</p>
                   </div>
                 </div>
               </div>
 
               {/* DeepSeek API */}
-              <div className="bg-[#112240]/80 backdrop-blur-xl p-10 rounded-[2rem] border border-blue-500/30 relative group">
+              <div className="bg-[#112240]/80 backdrop-blur-xl p-5 md:p-10 rounded-[2rem] border border-blue-500/30 relative group">
                 <div className="absolute top-0 right-0 p-8 flex flex-col items-end gap-4">
                   <div className="px-5 py-2.5 bg-blue-500/10 text-blue-400 rounded-full text-sm font-black tracking-widest border border-blue-500/30">
                     <label className="flex items-center gap-3 cursor-pointer">
@@ -530,7 +530,7 @@ export default function AdminPanel() {
                   <div className="w-20 h-20 bg-blue-500/10 rounded-3xl flex items-center justify-center text-blue-400"><Activity size={40} /></div>
                   <div>
                     <h4 className="text-3xl font-black text-white tracking-widest mb-2">DeepSeek API</h4>
-                    <p className="text-gray-400 font-bold tracking-wide">deepseek-chat • Cloud Reasoning</p>
+                    <p className="text-gray-400 font-bold tracking-wide">deepseek-chat â€¢ Cloud Reasoning</p>
                   </div>
                 </div>
                 <div className="mb-10 bg-[#0a192f] p-5 rounded-2xl border border-[#1e293b] inline-block shadow-inner">
@@ -552,7 +552,7 @@ export default function AdminPanel() {
               </div>
 
               {/* OpenAI API */}
-              <div className="bg-[#112240]/80 backdrop-blur-xl p-10 rounded-[2rem] border border-purple-500/30 relative group">
+              <div className="bg-[#112240]/80 backdrop-blur-xl p-5 md:p-10 rounded-[2rem] border border-purple-500/30 relative group">
                 <div className="absolute top-0 right-0 p-8 flex flex-col items-end gap-4">
                   <div className="px-5 py-2.5 bg-purple-500/10 text-purple-400 rounded-full text-sm font-black tracking-widest border border-purple-500/30">
                     <label className="flex items-center gap-3 cursor-pointer">
@@ -564,7 +564,7 @@ export default function AdminPanel() {
                   <div className="w-20 h-20 bg-purple-500/10 rounded-3xl flex items-center justify-center text-purple-400"><Activity size={40} /></div>
                   <div>
                     <h4 className="text-3xl font-black text-white tracking-widest mb-2">OpenAI ChatGPT API</h4>
-                    <p className="text-gray-400 font-bold tracking-wide">gpt-4o-mini • Cloud Fallback</p>
+                    <p className="text-gray-400 font-bold tracking-wide">gpt-4o-mini â€¢ Cloud Fallback</p>
                   </div>
                 </div>
                 <div className="mb-10 bg-[#0a192f] p-5 rounded-2xl border border-[#1e293b] inline-block shadow-inner">
@@ -641,7 +641,7 @@ export default function AdminPanel() {
                             </div>
                             <div className="flex items-center gap-2 mt-3">
                               <span className={`text-xs font-mono px-2 py-1 rounded ${chunk.has_vector ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                                {chunk.has_vector ? '● vector' : '○ no vector'}
+                                {chunk.has_vector ? 'â— vector' : 'â—‹ no vector'}
                               </span>
                               <span className="font-mono text-xs text-gray-600 bg-[#112240] px-2 py-1 rounded">{chunk.chunk_id}</span>
                             </div>

@@ -6,8 +6,9 @@ def test_auto_and_empty_are_passthrough():
     assert main.resolve_model_choice("auto") == (None, None, False)
 
 
-def test_openai_is_blocked():
-    assert main.resolve_model_choice("openai") == (None, None, True)
+def test_openai_needs_admin():
+    # OpenAI is forced first but flagged admin-only (verified in /api/chat).
+    assert main.resolve_model_choice("openai") == ("openai", None, True)
 
 
 def test_deepseek_forces_deepseek_first():

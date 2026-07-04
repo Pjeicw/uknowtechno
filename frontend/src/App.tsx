@@ -90,8 +90,13 @@ function CustomCursor() {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [isHover, setIsHover] = useState(false);
   const [angle, setAngle] = useState(0);
+  // Touch devices have no cursor — skip the rocket + fire trail entirely.
+  const [hasPointer] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+  );
 
   useEffect(() => {
+    if (!hasPointer) return;
     let lastX = 0;
     let lastY = 0;
     
@@ -149,10 +154,12 @@ function CustomCursor() {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseover', handleMouseOver);
     };
-  }, []);
+  }, [hasPointer]);
+
+  if (!hasPointer) return null;
 
   return (
-    <div 
+    <div
       className={`custom-cursor-rocket ${isHover ? 'hover' : ''}`}
       style={{ 
         transform: `translate(${pos.x}px, ${pos.y}px) rotate(${angle}deg)`,
@@ -313,19 +320,19 @@ function AdminLayout() {
       </div>
       
       {/* Admin Header */}
-      <header className="relative z-20 w-full p-6 px-10 flex justify-between items-center border-b border-[var(--accent-cyan)]/20 bg-[#0a192f]/80 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-        <a href="/" className="flex items-center gap-3 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors font-mono tracking-widest text-sm font-bold">
-           <span className="text-xl leading-none">←</span> RETURN TO PORTFOLIO
+      <header className="relative z-20 w-full p-4 md:p-6 md:px-10 flex justify-between items-center gap-3 border-b border-[var(--accent-cyan)]/20 bg-[#0a192f]/80 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        <a href="/" className="flex items-center gap-2 md:gap-3 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors font-mono tracking-widest text-xs md:text-sm font-bold">
+           <span className="text-xl leading-none">←</span> <span className="hidden sm:inline">RETURN TO PORTFOLIO</span><span className="sm:hidden">BACK</span>
         </a>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
            <div className="w-2 h-2 bg-[var(--accent-cyan)] rounded-full animate-pulse shadow-[0_0_10px_var(--accent-cyan)]"></div>
-           <div className="text-[var(--accent-cyan)] font-black tracking-widest text-lg drop-shadow-[0_0_10px_rgba(100,255,218,0.5)]">
+           <div className="text-[var(--accent-cyan)] font-black tracking-widest text-sm md:text-lg drop-shadow-[0_0_10px_rgba(100,255,218,0.5)]">
               SYSTEM ADMINISTRATION
            </div>
         </div>
       </header>
 
-      <div className="relative z-10 w-full flex-1 flex items-center justify-center p-10">
+      <div className="relative z-10 w-full flex-1 flex items-center justify-center p-3 md:p-10">
         <AdminPanel />
       </div>
     </div>

@@ -20,7 +20,12 @@ export default function ChatWidget() {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  // Sidebar starts closed on phones (it would cover most of the screen).
+  const [showSidebar, setShowSidebar] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 768);
+  // On phones the sidebar overlays the chat, so close it after any pick.
+  const closeSidebarOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setShowSidebar(false);
+  };
   
   const [threads, setThreads] = useState<Thread[]>(() => {
     const saved = localStorage.getItem('ai_chat_threads');
@@ -73,8 +78,10 @@ export default function ChatWidget() {
 
   const fetchPickers = useCallback(async () => {
     try {
-      const staffToken = localStorage.getItem('staff_token');
-      const authHeaders: Record<string, string> = staffToken ? { Authorization: `Bearer ${staffToken}` } : {};
+      // Admin token (from the settings login) outranks a staff token: it
+      // unlocks OpenAI and full knowledge access.
+      const bearer = localStorage.getItem('admin_token') || localStorage.getItem('staff_token');
+      const authHeaders: Record<string, string> = bearer ? { Authorization: `Bearer ${bearer}` } : {};
       const [mRes, kRes] = await Promise.all([
         fetch(`${API_BASE}/api/models`),
         fetch(`${API_BASE}/api/knowledge`, { headers: authHeaders }),
@@ -87,7 +94,10 @@ export default function ChatWidget() {
         }
         for (const id of m.ollama_models || []) opts.push({ id, label: `Ollama — ${id}`, online: true });
         for (const c of m.cloud || []) {
-          if (c.id === 'openai') opts.push({ id: c.id, label: c.label, locked: !!c.locked });
+          // OpenAI shows unlocked once an admin token is stored (the backend
+          // still verifies the token on every chat request).
+          const adminUnlocked = !!localStorage.getItem('admin_token');
+          if (c.id === 'openai') opts.push({ id: c.id, label: c.label, locked: !!c.locked && !adminUnlocked });
         }
         setModelOptions(opts.length ? opts : [{ id: 'deepseek', label: 'DeepSeek · default' }]);
       }
@@ -245,9 +255,10 @@ export default function ChatWidget() {
     const controller = new AbortController();
     const connectTimer = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
 
-    // Optional staff token unlocks role-gated knowledge (G3); public if absent.
-    const staffToken = localStorage.getItem('staff_token');
-    const authHeaders: Record<string, string> = staffToken ? { Authorization: `Bearer ${staffToken}` } : {};
+    // Admin/staff token unlocks role-gated knowledge (G3) and, for admins,
+    // the OpenAI model; requests stay public if absent.
+    const bearer = localStorage.getItem('admin_token') || localStorage.getItem('staff_token');
+    const authHeaders: Record<string, string> = bearer ? { Authorization: `Bearer ${bearer}` } : {};
 
     // With media present, send multipart FormData (Phase 5); else plain JSON.
     let requestInit: RequestInit;
@@ -369,10 +380,11 @@ export default function ChatWidget() {
     }, 2000);
   };
 
-  // Fullscreen styling or standard widget styling
-  const containerClasses = isFullScreen 
+  // Fullscreen styling or standard widget styling. On phones (< md) the
+  // widget always fills the screen; the floating 800px panel is desktop-only.
+  const containerClasses = isFullScreen
     ? "fixed inset-0 w-full h-full z-50 flex shadow-2xl bg-[#0A192F]"
-    : "absolute bottom-0 right-0 w-[800px] max-w-[90vw] max-h-[85vh] h-[600px] flex shadow-2xl rounded-2xl overflow-hidden shadow-[var(--accent-cyan)]/30 border border-[var(--accent-cyan)]/20";
+    : "fixed inset-0 w-full h-[100dvh] flex shadow-2xl overflow-hidden md:absolute md:inset-auto md:bottom-0 md:right-0 md:w-[800px] md:max-w-[90vw] md:h-[600px] md:max-h-[85vh] md:rounded-2xl shadow-[var(--accent-cyan)]/30 md:border md:border-[var(--accent-cyan)]/20";
     
   const containerStyle = isFullScreen 
     ? {} 
@@ -398,11 +410,11 @@ export default function ChatWidget() {
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: 260, opacity: 1 }}
                   exit={{ width: 0, opacity: 0 }}
-                  className="bg-[#0f172a] border-r border-[#1e293b] flex flex-col overflow-hidden whitespace-nowrap shrink-0"
+                  className="absolute inset-y-0 left-0 z-30 max-w-[85vw] md:static md:z-auto md:max-w-none bg-[#0f172a] border-r border-[#1e293b] flex flex-col overflow-hidden whitespace-nowrap shrink-0"
                 >
                   <div className="p-3">
-                    <button 
-                      onClick={handleNewChat}
+                    <button
+                      onClick={() => { handleNewChat(); closeSidebarOnMobile(); }}
                       className="w-full flex items-center gap-2 p-3 rounded-lg bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] hover:bg-[var(--accent-cyan)]/20 transition-colors font-medium"
                     >
                       <Plus size={18} /> {t('chatNewChat')}
@@ -414,7 +426,7 @@ export default function ChatWidget() {
                     {threads.map(thread => (
                       <div 
                         key={thread.id}
-                        onClick={() => setCurrentThreadId(thread.id)}
+                        onClick={() => { setCurrentThreadId(thread.id); closeSidebarOnMobile(); }}
                         className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${currentThreadId === thread.id ? 'bg-[#1e293b] text-white' : 'hover:bg-[#1e293b]/50 text-gray-400'}`}
                       >
                         {editingId === thread.id ? (
