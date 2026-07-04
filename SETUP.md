@@ -41,13 +41,19 @@ POCKETBASE_ADMIN_COLLECTION=_superusers
 # Who may call the API from a browser (NO trailing slash, comma-separated).
 CORS_ALLOWED_ORIGINS=http://localhost:5173,https://uknowtechno.com
 
-# Cloud keys — paste your NEWLY ROTATED keys here (never commit this file).
-OPENAI_API_KEY=sk-...
-DEEPSEEK_API_KEY=sk-...
+# Cloudflare AI Gateway (BYOK) — cloud calls route through the gateway.
+# Raw provider keys are NOT stored here; they live in Cloudflare Secrets Store.
+CF_ACCOUNT_ID=your_cloudflare_account_id
+CF_AIG_GATEWAY=your_gateway_id
+CF_AIG_TOKEN=your_gateway_auth_token
+DEEPSEEK_KEY_REF=DEEPSEEK_KEY_1
+OPENAI_KEY_REF=OPENAI_KEY_1
 ```
 
-> 🔴 **Rotate your OpenAI + DeepSeek keys first** — the old ones were committed
-> in plaintext and must be considered compromised.
+> 🔴 **Rotate your OpenAI + DeepSeek keys first**, then add the rotated keys to
+> Cloudflare Secrets Store via **AI Gateway → Provider Keys → Add** (BYOK). The
+> old keys were committed in plaintext and are compromised. The only cloud
+> secret that belongs on this host is `CF_AIG_TOKEN`.
 
 Optional tuning (sensible defaults exist for all of these):
 

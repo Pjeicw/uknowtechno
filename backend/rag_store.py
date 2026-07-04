@@ -88,12 +88,12 @@ def ensure_schema(con: sqlite3.Connection) -> None:
 import json as _json
 
 DEFAULT_CONFIG = {
-    "active_model": "ollama-local",
+    "active_model": "deepseek",
     # Monthly USD budget per cloud provider (mirrors the admin panel defaults).
     "budgets": {"deepseek": 10.0, "openai": 20.0},
     # Ordered failover priority. The chat path tries active_model first, then
     # walks this chain, skipping over-budget/unavailable tiers (Phase 3).
-    "fallback_chain": ["ollama-local", "deepseek", "openai"],
+    "fallback_chain": ["deepseek", "ollama-local", "openai"],
     # Use-case → local Ollama model map (G1). Intent detection picks one.
     "local_models": {
         "coding": "qwen2.5-coder:7b",

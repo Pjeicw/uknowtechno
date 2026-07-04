@@ -79,13 +79,53 @@ def load_config() -> dict:
         print(f"Config load fell back to defaults ({type(e).__name__}): {e}")
         return dict(rag_store.DEFAULT_CONFIG)
 
+# --- Cloudflare AI Gateway (BYOK) --------------------------------------------
+# Cloud providers are reached THROUGH the gateway, not directly. Two headers do
+# the work: `cf-aig-authorization` authenticates us to the gateway, and the
+# SDK's api_key carries the Secrets Store *reference name* the gateway swaps for
+# the real provider key (BYOK). Raw provider keys never live on this host.
+def aig_provider_config(provider: str) -> dict:
+    """Compose AI Gateway connection details for a cloud provider.
+
+    Returns {base_url, api_key, headers}. Reads env fresh so it is unit-testable
+    and reflects rotated config without a code change. `provider` is
+    'deepseek' or 'openai'.
+    """
+    account = os.getenv("CF_ACCOUNT_ID", "")
+    gateway = os.getenv("CF_AIG_GATEWAY", "")
+    token = os.getenv("CF_AIG_TOKEN", "")
+    key_ref = os.getenv(f"{provider.upper()}_KEY_REF", "")
+    base_url = f"https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/{provider}"
+    headers = {"cf-aig-authorization": f"Bearer {token}"} if token else {}
+    # api_key must be non-empty (SDK requirement); the gateway ignores it under
+    # BYOK and uses the stored key named by key_ref instead.
+    return {"base_url": base_url, "api_key": key_ref or "unused", "headers": headers}
+
+
+def build_provider_client(provider: str) -> AsyncOpenAI:
+    """Build an AsyncOpenAI client bound to the AI Gateway for a cloud provider."""
+    cfg = aig_provider_config(provider)
+    return AsyncOpenAI(
+        base_url=cfg["base_url"], api_key=cfg["api_key"], default_headers=cfg["headers"]
+    )
+
+
+def provider_ready(provider: str) -> bool:
+    """A cloud tier is callable when the gateway is configured and the provider's
+    Secrets Store key reference is set. Replaces the old raw-key presence check."""
+    gateway_ok = all(
+        os.getenv(v) for v in ("CF_ACCOUNT_ID", "CF_AIG_GATEWAY", "CF_AIG_TOKEN")
+    )
+    return bool(gateway_ok and os.getenv(f"{provider.upper()}_KEY_REF"))
+
 # Setup AI Clients
 # Accept OLLAMA_API_URL (used in code) or OLLAMA_HOST (used in older .env files).
 ollama_host = os.getenv("OLLAMA_API_URL") or os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
 # We use AsyncOpenAI for all three to keep the code consistent. Ollama has an OpenAI-compatible endpoint!
 ollama_client = AsyncOpenAI(base_url=f"{ollama_host}/v1", api_key="ollama")
-deepseek_client = AsyncOpenAI(base_url="https://api.deepseek.com/v1", api_key=os.getenv("DEEPSEEK_API_KEY", ""))
-openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+# DeepSeek + OpenAI are reached through the gateway (BYOK); Ollama stays direct.
+deepseek_client = build_provider_client("deepseek")
+openai_client = build_provider_client("openai")
 
 # PocketBase config for real admin-token verification (Phase 1 / S3)
 POCKETBASE_URL = os.getenv("POCKETBASE_URL", "http://127.0.0.1:8090").rstrip("/")
@@ -655,8 +695,8 @@ async def admin_list_models(_admin: bool = Depends(verify_pocketbase_admin)):
         "ollama_error": ollama_error,
         "installed_models": installed,
         "providers": {
-            "deepseek": bool(os.getenv("DEEPSEEK_API_KEY")),
-            "openai": bool(os.getenv("OPENAI_API_KEY")),
+            "deepseek": provider_ready("deepseek"),
+            "openai": provider_ready("openai"),
         },
         "config": {
             "active_model": cfg.get("active_model"),
