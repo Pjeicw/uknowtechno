@@ -85,24 +85,28 @@ export default function Hero3D() {
       labelElements.push(el);
     });
 
-    // Center AI Text
+    // Center logo (was a plain "AI" text label — now the brand mark itself)
     const centerLabel = document.createElement('div');
     centerLabel.style.position = 'absolute';
     centerLabel.style.pointerEvents = 'none';
     centerLabel.style.transform = 'translate(-50%, -50%)';
     centerLabel.style.zIndex = '20';
-    
-    const innerText = document.createElement('div');
-    innerText.textContent = 'AI';
-    innerText.className = 'ai-text-3d';
-    centerLabel.appendChild(innerText);
+
+    const innerLogo = document.createElement('img');
+    innerLogo.src = '/favicon.svg';
+    innerLogo.alt = 'UknowTechno';
+    // Dedicated class (not the shared "ai-text-3d" hook) so animating it
+    // doesn't also affect the chat launcher button's "AI" label.
+    innerLogo.className = 'hero-cube-logo';
+    centerLabel.appendChild(innerLogo);
 
     container.appendChild(centerLabel);
 
     // 360 Rotation Controls
     let isDragging = false;
     let previousMousePosition = { x: 0, y: 0 };
-    let momentum = { x: 0.003, y: 0.003 };
+    // Slower idle spin than before (was 0.003) for a calmer intro.
+    let momentum = { x: 0.0012, y: 0.0012 };
 
     const onPointerDown = (e: MouseEvent | TouchEvent) => {
       if ((e.target as HTMLElement).closest('button, a')) return;
@@ -146,8 +150,8 @@ export default function Hero3D() {
       if (cube && glowCube) {
         if (!isDragging) {
           // Keep spinning slowly based on last momentum, or decay to a constant slow spin
-          momentum.x = momentum.x * 0.95 + 0.003 * 0.05;
-          momentum.y = momentum.y * 0.95 + 0.003 * 0.05;
+          momentum.x = momentum.x * 0.95 + 0.0012 * 0.05;
+          momentum.y = momentum.y * 0.95 + 0.0012 * 0.05;
           cube.rotation.x += momentum.x;
           cube.rotation.y += momentum.y;
         }

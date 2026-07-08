@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Shield, Activity, Database, Server, BarChart2, Trash2, Search, Cpu, RefreshCw, CheckCircle, XCircle, FileText, UploadCloud, Layers, LogOut, Zap, AlertTriangle } from 'lucide-react';
+import { Shield, Activity, Database, Server, BarChart2, Trash2, Search, Cpu, RefreshCw, CheckCircle, XCircle, FileText, UploadCloud, Layers, LogOut, Zap, AlertTriangle, Eye, Save } from 'lucide-react';
 
 // --- Config (env-driven; see frontend/.env.example) --------------------------
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000';
@@ -20,7 +20,12 @@ type RAGChunk = {
 
 type ApiStatus = 'idle' | 'checking' | 'online' | 'offline';
 
-export default function AdminPanel() {
+interface AdminPanelProps {
+  /** Called when the panel should close (Sign out, or the back/close button). */
+  onClose?: () => void;
+}
+
+export default function AdminPanel({ onClose }: AdminPanelProps) {
   const { t } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState<string>('');
@@ -31,8 +36,6 @@ export default function AdminPanel() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [devToken, setDevToken] = useState('');
-  const [showDev, setShowDev] = useState(false);
 
   // Model Settings (loaded from backend)
   const [activeModel, setActiveModel] = useState('ollama-local');
@@ -61,6 +64,17 @@ export default function AdminPanel() {
   const [isUploading, setIsUploading] = useState(false);
   const [busyMsg, setBusyMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Topic (knowledge base) picker for uploads — leave blank and the backend
+  // auto-derives a topic from the filename instead.
+  const [topics, setTopics] = useState<{ code: string; label: string }[]>([]);
+  const [topicInput, setTopicInput] = useState('');
+
+  // View/Edit modal for a single chunk (doubles as both "view" and "edit").
+  const [editingChunk, setEditingChunk] = useState<RAGChunk | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editSectionTitle, setEditSectionTitle] = useState('');
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState('');
 
   // Authenticated fetch against the FastAPI gateway.
   const authFetch = useCallback((path: string, opts: RequestInit = {}) => {
@@ -91,13 +105,6 @@ export default function AdminPanel() {
     } finally {
       setLoginLoading(false);
     }
-  };
-
-  // Local-dev login: use the ADMIN_DEV_TOKEN you set in backend/.env.
-  const devLogin = () => {
-    if (!devToken.trim()) return;
-    setToken(devToken.trim());
-    setIsAuthenticated(true);
   };
 
   // --- Load config + usage once authenticated ----------------------------
@@ -194,9 +201,18 @@ export default function AdminPanel() {
     if (isAuthenticated && activeTab === 'models') loadModels();
   }, [isAuthenticated, activeTab, loadModels]);
 
+  const loadTopics = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/admin/rag/topics');
+      if (!res.ok) return;
+      const data = await res.json();
+      setTopics(data.topics || []);
+    } catch { /* offline */ }
+  }, [authFetch]);
+
   useEffect(() => {
-    if (isAuthenticated && activeTab === 'rag') loadChunks();
-  }, [isAuthenticated, activeTab, loadChunks]);
+    if (isAuthenticated && activeTab === 'rag') { loadChunks(); loadTopics(); }
+  }, [isAuthenticated, activeTab, loadChunks, loadTopics]);
 
   // --- Model routing + budgets -------------------------------------------
   const updateModelConfig = async (model: string) => {
@@ -255,11 +271,15 @@ export default function AdminPanel() {
     try {
       const fd = new FormData();
       fd.append('file', file);
+      // Blank topic -> backend auto-derives one from the filename.
+      if (topicInput.trim()) fd.append('topic', topicInput.trim());
       const res = await authFetch('/api/admin/upload', { method: 'POST', body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `Upload failed (${res.status})`);
-      setBusyMsg(`Stored ${data.chunks_stored} chunk(s) from ${data.filename}.`);
+      setBusyMsg(`Stored ${data.chunks_stored} chunk(s) from ${data.filename} in topic "${data.topic}".`);
+      setTopicInput('');
       await loadChunks();
+      await loadTopics();
     } catch (err) {
       setBusyMsg(`Error: ${(err as Error).message}`);
     } finally {
@@ -275,6 +295,42 @@ export default function AdminPanel() {
       const res = await authFetch(`/api/admin/rag/${id}`, { method: 'DELETE' });
       if (res.ok) setRagData((prev) => prev.filter((c) => c.chunk_id !== id));
     } catch (e) { console.error('Delete failed', e); }
+  };
+
+  const openChunkEditor = (chunk: RAGChunk) => {
+    setEditingChunk(chunk);
+    setEditContent(chunk.content);
+    setEditSectionTitle(chunk.section_title || '');
+    setEditError('');
+  };
+  const closeChunkEditor = () => {
+    setEditingChunk(null);
+    setEditError('');
+  };
+  const handleSaveChunk = async () => {
+    if (!editingChunk) return;
+    setEditBusy(true);
+    setEditError('');
+    try {
+      const res = await authFetch(`/api/admin/rag/${editingChunk.chunk_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent, section_title: editSectionTitle }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Save failed (${res.status})`);
+      // Reflect the edit locally instead of a full reload, then refresh in
+      // the background to pick up has_vector/created_at changes.
+      setRagData((prev) => prev.map((c) => (c.chunk_id === editingChunk.chunk_id
+        ? { ...c, content: editContent, section_title: editSectionTitle }
+        : c)));
+      closeChunkEditor();
+      await loadChunks();
+    } catch (err) {
+      setEditError((err as Error).message || 'Save failed');
+    } finally {
+      setEditBusy(false);
+    }
   };
 
   const handleBackfill = async () => {
@@ -327,8 +383,13 @@ export default function AdminPanel() {
 
   if (!isAuthenticated) {
     return (
-      <div className="fixed bottom-8 right-8 z-50 flex">
+      <div className="flex items-center justify-center w-full h-full p-4">
         <div className="glass-panel p-8 w-full max-w-md shadow-[0_0_50px_rgba(100,255,218,0.1)] backdrop-blur-xl border border-[var(--accent-cyan)]/20 relative overflow-hidden group">
+          {onClose && (
+            <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-20" title="Close" aria-label="Close">
+              <XCircle size={20} />
+            </button>
+          )}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-[var(--accent-cyan)]/5 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
 
           <div className="w-20 h-20 rounded-2xl bg-[#112240] border border-[var(--accent-cyan)]/30 text-[var(--accent-cyan)] flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(100,255,218,0.2)]">
@@ -342,7 +403,7 @@ export default function AdminPanel() {
             </div>
             <div>
               <label className="block text-[var(--accent-cyan)]/80 mb-2 text-xs font-black tracking-widest"> {t('adminPassphrase')} </label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0a192f]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 text-white outline-none focus:border-[var(--accent-cyan)] focus:shadow-[0_0_15px_rgba(100,255,218,0.2)] transition-all" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#0a192f]/80 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 text-white outline-none focus:border-[var(--accent-cyan)] focus:shadow-[0_0_15px_rgba(100,255,218,0.2)] transition-all" placeholder="••••••••••••" />
             </div>
             {loginError && (
               <div className="text-red-400 text-xs font-bold bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2">
@@ -353,19 +414,6 @@ export default function AdminPanel() {
               {loginLoading ? 'CONNECTING...' : t('adminInitConnection')}
             </button>
           </form>
-
-          {/* Local-dev access (no PocketBase needed) */}
-          <div className="mt-6 pt-5 border-t border-[#1e293b] relative z-10">
-            <button type="button" onClick={() => setShowDev((s) => !s)} className="text-xs text-gray-500 hover:text-[var(--accent-cyan)] font-bold tracking-widest transition-colors">
-              {showDev ? 'â–¾' : 'â–¸'} LOCAL DEV ACCESS
-            </button>
-            {showDev && (
-              <div className="mt-3 flex gap-2">
-                <input type="password" value={devToken} onChange={(e) => setDevToken(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && devLogin()} placeholder="ADMIN_DEV_TOKEN from backend/.env" className="flex-1 bg-[#0a192f]/80 border border-[#1e293b] rounded-lg p-2.5 text-white text-sm outline-none focus:border-[var(--accent-cyan)]" />
-                <button type="button" onClick={devLogin} className="px-4 bg-[#1e293b] text-[var(--accent-cyan)] rounded-lg font-bold text-sm hover:bg-[var(--accent-cyan)] hover:text-[#0a192f] transition-all">ENTER</button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -378,8 +426,23 @@ export default function AdminPanel() {
   );
 
   return (
-    <div className="flex flex-col md:flex-row w-full h-full min-h-[600px] md:max-h-[850px] gap-4 md:gap-8 max-w-[1500px] mx-auto relative z-10 px-1 md:px-8 justify-center">
-      {/* Sidebar Navigation â€” becomes a horizontal tab bar on phones */}
+    // w-full lets this fill the wrapper's flex row, and max-w-[1500px]
+    // mx-auto then centers it *within* that — so on very wide screens it
+    // isn't glued to the left edge, and the wrapper's own px/py (ChatWidget)
+    // plus this panel's own px/pt keep it clear of the edges on small screens.
+    <div className="flex flex-col md:flex-row w-full h-full min-h-[600px] md:max-h-[850px] gap-4 md:gap-8 max-w-[1500px] mx-auto relative z-10 px-3 pt-3 md:px-8 md:pt-0 justify-center">
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-2 right-2 md:top-0 md:right-4 z-20 p-2 text-gray-400 hover:text-white bg-[#112240]/80 hover:bg-[#1e293b] rounded-xl border border-[#1e293b] transition-colors"
+          title="Close admin panel"
+          aria-label="Close admin panel"
+        >
+          <XCircle size={22} />
+        </button>
+      )}
+      {/* Sidebar Navigation — becomes a horizontal tab bar on phones */}
       <div className="w-full md:w-72 shrink-0 flex flex-row md:flex-col gap-2 md:gap-4 overflow-x-auto md:overflow-visible">
         <h2 className="hidden md:flex text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--accent-cyan)] mb-8 px-4 items-center gap-4 drop-shadow-[0_0_10px_rgba(100,255,218,0.3)]">
           <Server className="text-[var(--accent-cyan)]" size={32} /> ADMIN
@@ -393,7 +456,7 @@ export default function AdminPanel() {
           <Database size={22} /> {t('adminKnowledge')} </button>
 
         <div className="mt-auto">
-          <button onClick={() => { setIsAuthenticated(false); setToken(''); localStorage.removeItem('admin_token'); }} className="flex w-full items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[#0a192f] border border-red-500/30 hover:shadow-[0_0_20px_rgba(248,113,113,0.5)] mt-4">
+          <button onClick={() => { setIsAuthenticated(false); setToken(''); localStorage.removeItem('admin_token'); onClose?.(); }} className="flex w-full items-center gap-4 p-5 rounded-2xl font-black tracking-widest transition-all text-sm bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[#0a192f] border border-red-500/30 hover:shadow-[0_0_20px_rgba(248,113,113,0.5)] mt-4">
             <LogOut size={22} /> {t('adminSignOut')} </button>
         </div>
       </div>
@@ -591,17 +654,35 @@ export default function AdminPanel() {
         {/* RAG DB MANAGER TAB */}
         {activeTab === 'rag' && (
           <div className="space-y-8 h-full flex flex-col animate-[fadeIn_0.3s_ease-out] relative z-10">
-            <div className="flex justify-between items-center bg-gradient-to-r from-[#112240] to-transparent p-8 rounded-3xl border border-[var(--accent-cyan)]/20 shadow-lg">
-              <div>
-                <h3 className="text-4xl font-black text-white tracking-widest mb-2"> {t('adminKnowledgeBase')} </h3>
-                <p className="text-[var(--accent-cyan)] font-black tracking-widest text-sm">{ragStats.vectors} / {ragStats.chunks} chunks embedded</p>
+            <div className="flex flex-col gap-5 bg-gradient-to-r from-[#112240] to-transparent p-8 rounded-3xl border border-[var(--accent-cyan)]/20 shadow-lg">
+              <div className="flex flex-wrap justify-between items-center gap-4">
+                <div>
+                  <h3 className="text-4xl font-black text-white tracking-widest mb-2"> {t('adminKnowledgeBase')} </h3>
+                  <p className="text-[var(--accent-cyan)] font-black tracking-widest text-sm">{ragStats.vectors} / {ragStats.chunks} chunks embedded</p>
+                </div>
+                <div className="flex gap-3">
+                  <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf,.md,.txt,.xlsx,.csv,.docx" />
+                  <button onClick={handleBackfill} className="flex items-center gap-2 bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500 hover:text-[#0a192f] px-5 py-4 rounded-2xl font-black tracking-widest transition-all" title="Embed chunks that have no vector"><Zap size={20} /> BACKFILL</button>
+                  <button onClick={handlePurge} className="flex items-center gap-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[#0a192f] border border-red-500/30 px-5 py-4 rounded-2xl font-black tracking-widest transition-all" title="Delete all chunks"><AlertTriangle size={20} /> PURGE</button>
+                  <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="flex items-center gap-3 bg-[var(--accent-cyan)] text-[#0a192f] px-8 py-4 rounded-2xl font-black tracking-widest hover:scale-105 transition-all disabled:opacity-50">
+                    <UploadCloud size={24} /> {isUploading ? 'WORKING...' : t('adminSmartUpload')} </button>
+                </div>
               </div>
-              <div className="flex gap-3">
-                <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf,.md,.txt,.xlsx,.csv,.docx" />
-                <button onClick={handleBackfill} className="flex items-center gap-2 bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500 hover:text-[#0a192f] px-5 py-4 rounded-2xl font-black tracking-widest transition-all" title="Embed chunks that have no vector"><Zap size={20} /> BACKFILL</button>
-                <button onClick={handlePurge} className="flex items-center gap-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-[#0a192f] border border-red-500/30 px-5 py-4 rounded-2xl font-black tracking-widest transition-all" title="Delete all chunks"><AlertTriangle size={20} /> PURGE</button>
-                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="flex items-center gap-3 bg-[var(--accent-cyan)] text-[#0a192f] px-8 py-4 rounded-2xl font-black tracking-widest hover:scale-105 transition-all disabled:opacity-50">
-                  <UploadCloud size={24} /> {isUploading ? 'WORKING...' : t('adminSmartUpload')} </button>
+              {/* Topic picker — leave blank and the upload auto-sorts into a
+                  topic derived from the filename (see main.py slugify_topic). */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="text-xs font-black text-gray-500 tracking-widest uppercase shrink-0">Topic for next upload</label>
+                <input
+                  list="rag-topics"
+                  type="text"
+                  value={topicInput}
+                  onChange={(e) => setTopicInput(e.target.value)}
+                  placeholder="leave blank = auto from filename"
+                  className="flex-1 min-w-[220px] bg-[#0a192f] border border-[#1e293b] rounded-xl px-4 py-2.5 text-white text-sm outline-none focus:border-[var(--accent-cyan)] transition-all"
+                />
+                <datalist id="rag-topics">
+                  {topics.map((tpc) => <option key={tpc.code} value={tpc.label} />)}
+                </datalist>
               </div>
             </div>
 
@@ -653,8 +734,13 @@ export default function AdminPanel() {
                           </div>
                         </td>
                         <td className="p-6 bg-[#0a192f] rounded-r-[1.5rem] border-y border-r border-[#1e293b] group-hover:border-[var(--accent-cyan)]/50 transition-colors text-right align-middle shadow-md">
-                          <button onClick={() => handleDeleteChunk(chunk.chunk_id)} className="flex items-center justify-center gap-2 w-32 py-3 text-sm font-black tracking-widest text-red-400 bg-red-400/10 hover:bg-red-400 hover:text-[#0a192f] rounded-xl border border-red-400/50 transition-all ml-auto">
-                            <Trash2 size={16} /> {t('adminPurge')} </button>
+                          <div className="flex flex-col gap-2 items-end">
+                            <button onClick={() => openChunkEditor(chunk)} className="flex items-center justify-center gap-2 w-32 py-3 text-sm font-black tracking-widest text-[var(--accent-cyan)] bg-[var(--accent-cyan)]/10 hover:bg-[var(--accent-cyan)] hover:text-[#0a192f] rounded-xl border border-[var(--accent-cyan)]/50 transition-all ml-auto">
+                              <Eye size={16} /> VIEW
+                            </button>
+                            <button onClick={() => handleDeleteChunk(chunk.chunk_id)} className="flex items-center justify-center gap-2 w-32 py-3 text-sm font-black tracking-widest text-red-400 bg-red-400/10 hover:bg-red-400 hover:text-[#0a192f] rounded-xl border border-red-400/50 transition-all ml-auto">
+                              <Trash2 size={16} /> {t('adminPurge')} </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -671,6 +757,66 @@ export default function AdminPanel() {
                 </table>
               </div>
             </div>
+
+            {/* View/Edit chunk modal */}
+            {editingChunk && (
+              <div
+                className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={closeChunkEditor}
+              >
+                <div
+                  className="bg-[#0a192f] border border-[var(--accent-cyan)]/30 rounded-[1.5rem] w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 md:p-8 shadow-[0_0_60px_rgba(0,0,0,0.6)]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h4 className="text-2xl font-black text-white tracking-wide flex items-center gap-2"><FileText size={22} className="text-[var(--accent-cyan)]" /> {editingChunk.document_title}</h4>
+                      <p className="text-xs text-gray-500 font-mono mt-1">{editingChunk.kb_code} · {editingChunk.chunk_id}</p>
+                    </div>
+                    <button onClick={closeChunkEditor} className="p-2 text-gray-400 hover:text-white hover:bg-[#1e293b] rounded-xl transition-colors">
+                      <XCircle size={22} />
+                    </button>
+                  </div>
+
+                  <label className="block text-xs font-black text-[var(--accent-cyan)] mb-2 tracking-widest uppercase">Section title</label>
+                  <input
+                    type="text"
+                    value={editSectionTitle}
+                    onChange={(e) => setEditSectionTitle(e.target.value)}
+                    placeholder="(optional)"
+                    className="w-full bg-[#112240] border border-[#1e293b] rounded-xl p-3 mb-5 text-white text-sm outline-none focus:border-[var(--accent-cyan)] transition-all"
+                  />
+
+                  <label className="block text-xs font-black text-[var(--accent-cyan)] mb-2 tracking-widest uppercase">Content</label>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={12}
+                    className="w-full bg-[#112240] border border-[#1e293b] rounded-xl p-4 text-gray-200 font-mono text-sm leading-relaxed outline-none focus:border-[var(--accent-cyan)] transition-all resize-y"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Saving re-embeds this chunk automatically, so search stays accurate against the edited text.</p>
+
+                  {editError && (
+                    <div className="mt-4 text-sm text-red-400 leading-relaxed p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                      {editError}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button onClick={closeChunkEditor} className="px-6 py-3 text-sm font-black tracking-widest text-gray-400 hover:text-white rounded-xl border border-[#1e293b] hover:bg-[#1e293b] transition-all">
+                      CANCEL
+                    </button>
+                    <button
+                      onClick={handleSaveChunk}
+                      disabled={editBusy}
+                      className="flex items-center gap-2 px-6 py-3 text-sm font-black tracking-widest bg-[var(--accent-cyan)] text-[#0a192f] rounded-xl hover:brightness-110 disabled:opacity-60 transition-all"
+                    >
+                      <Save size={16} /> {editBusy ? 'SAVING…' : 'SAVE & RE-EMBED'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

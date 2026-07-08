@@ -37,26 +37,76 @@ export default function CanvasBackground() {
     window.addEventListener('resize', resizeCanvases);
 
     // --- Starfield (Space) ---
+    // Slower drift, fewer/softer points, and a gentle per-star twinkle so it
+    // reads as a distant galaxy instead of a fast field of uniform white
+    // dots (previous: 300 fully-opaque dots at 0.05-0.25px/frame).
     const starfieldCtx = starfieldCanvas.getContext('2d')!;
-    const stars = Array.from({ length: 300 }, () => ({
+    const stars = Array.from({ length: 180 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      size: Math.random() * 1.5 + 0.5,
-      speed: (Math.random() * 0.2) + 0.05
+      size: Math.random() * 1.3 + 0.4,
+      speed: (Math.random() * 0.05) + 0.015,
+      baseOpacity: Math.random() * 0.4 + 0.3,
+      twinklePhase: Math.random() * Math.PI * 2,
+      twinkleSpeed: Math.random() * 0.015 + 0.005,
     }));
+
+    // --- Occasional shooting star ("star fall") ---
+    type ShootingStar = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number };
+    let shootingStars: ShootingStar[] = [];
+    const maybeSpawnShootingStar = () => {
+      // Rare per frame -> reads as "sometimes", not constant rain.
+      if (Math.random() < 0.0025 && shootingStars.length < 2) {
+        const angle = (Math.PI / 4) + (Math.random() * 0.4 - 0.2); // ~45deg +/- jitter
+        const speed = 9 + Math.random() * 5;
+        shootingStars.push({
+          x: Math.random() * starfieldCanvas.width * 0.7,
+          y: Math.random() * starfieldCanvas.height * 0.3,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0,
+          maxLife: 40 + Math.random() * 20,
+        });
+      }
+    };
+
     const animateStars = () => {
       starfieldCtx.clearRect(0, 0, starfieldCanvas.width, starfieldCanvas.height);
-      starfieldCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       stars.forEach(star => {
-        star.y -= star.speed; // moving upwards slowly
+        star.y -= star.speed; // moving upwards, slowly
         if (star.y < 0) {
           star.y = starfieldCanvas.height;
           star.x = Math.random() * starfieldCanvas.width;
         }
+        star.twinklePhase += star.twinkleSpeed;
+        const twinkle = (Math.sin(star.twinklePhase) + 1) / 2; // 0..1
+        const opacity = star.baseOpacity + twinkle * 0.35;
+        starfieldCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
         starfieldCtx.beginPath();
         starfieldCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
         starfieldCtx.fill();
       });
+
+      maybeSpawnShootingStar();
+      shootingStars.forEach(s => {
+        const fade = 1 - s.life / s.maxLife;
+        const tailX = s.x - s.vx * 6;
+        const tailY = s.y - s.vy * 6;
+        const grad = starfieldCtx.createLinearGradient(s.x, s.y, tailX, tailY);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${fade})`);
+        grad.addColorStop(1, 'rgba(100, 255, 218, 0)');
+        starfieldCtx.strokeStyle = grad;
+        starfieldCtx.lineWidth = 2;
+        starfieldCtx.beginPath();
+        starfieldCtx.moveTo(s.x, s.y);
+        starfieldCtx.lineTo(tailX, tailY);
+        starfieldCtx.stroke();
+        s.x += s.vx;
+        s.y += s.vy;
+        s.life += 1;
+      });
+      shootingStars = shootingStars.filter(s => s.life < s.maxLife);
+
       animationIds.push(requestAnimationFrame(animateStars));
     };
     animateStars();

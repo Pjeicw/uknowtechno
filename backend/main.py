@@ -127,13 +127,27 @@ ollama_client = AsyncOpenAI(base_url=f"{ollama_host}/v1", api_key="ollama")
 deepseek_client = build_provider_client("deepseek")
 openai_client = build_provider_client("openai")
 
+# Fail loud, not silent: an empty CF_ACCOUNT_ID (or gateway/token) still
+# builds a client — just with a broken base_url like ".../v1//gateway/deepseek"
+# — so the only symptom at request time is a cryptic Cloudflare 2035 "Account
+# ID missing from request path" error, logged per-chat with no obvious cause.
+# Surface the real, fixable reason once at startup instead.
+for _p in ("deepseek", "openai"):
+    if not provider_ready(_p):
+        _missing = [
+            v for v in ("CF_ACCOUNT_ID", "CF_AIG_GATEWAY", "CF_AIG_TOKEN", f"{_p.upper()}_KEY_REF")
+            if not os.getenv(v)
+        ]
+        print(
+            f"⚠️  '{_p}' cloud tier is NOT configured — missing env var(s): {', '.join(_missing)}. "
+            f"Chats routed to '{_p}' will fail with a Cloudflare Gateway error (e.g. code 2035 "
+            f"'Account ID missing from request path') until these are set in backend/.env. "
+            f"See DEPLOY.md Step 3."
+        )
+
 # PocketBase config for real admin-token verification (Phase 1 / S3)
 POCKETBASE_URL = os.getenv("POCKETBASE_URL", "http://127.0.0.1:8090").rstrip("/")
 POCKETBASE_ADMIN_COLLECTION = os.getenv("POCKETBASE_ADMIN_COLLECTION", "_superusers")
-# LOCAL DEV ONLY: if set, this token is accepted as an admin bearer without
-# PocketBase, so you can configure the app locally before wiring auth. Leave
-# UNSET (empty) in production.
-ADMIN_DEV_TOKEN = os.getenv("ADMIN_DEV_TOKEN", "")
 # Staff users (for role-gated chat knowledge, G3). Their record's role field maps
 # to an access level; any authenticated user with no role defaults to "staff".
 POCKETBASE_USER_COLLECTION = os.getenv("POCKETBASE_USER_COLLECTION", "users")
@@ -388,9 +402,7 @@ async def resolve_role(request: Request) -> str:
     if not auth.startswith("Bearer "):
         return "public"
     token = auth.split(" ", 1)[1].strip()
-    # Local-dev bypass mirrors the admin-endpoint bypass (empty in production).
-    if ADMIN_DEV_TOKEN and token == ADMIN_DEV_TOKEN:
-        return "admin"
+
     url = f"{POCKETBASE_URL}/api/collections/{POCKETBASE_USER_COLLECTION}/auth-refresh"
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -462,11 +474,6 @@ async def verify_pocketbase_admin(request: Request):
         raise HTTPException(status_code=401, detail="Missing or invalid admin token")
 
     token = auth_header.split(" ", 1)[1].strip()
-
-    # Local-dev bypass: accept the configured dev token without PocketBase.
-    if ADMIN_DEV_TOKEN and token == ADMIN_DEV_TOKEN:
-        print("Admin auth via ADMIN_DEV_TOKEN (local dev mode)")
-        return True
 
     refresh_url = (
         f"{POCKETBASE_URL}/api/collections/{POCKETBASE_ADMIN_COLLECTION}/auth-refresh"
@@ -561,6 +568,10 @@ async def update_config(
 @app.post("/api/admin/upload")
 async def upload_rag_document(
     file: UploadFile = File(...),
+    # Optional admin-typed topic. Left blank, the topic is auto-derived from
+    # the filename so every upload still auto-sorts into its own knowledge
+    # base instead of all landing in one default bucket.
+    topic: Optional[str] = Form(None),
     _admin: bool = Depends(verify_pocketbase_admin),  # S2: route now requires a valid admin token
 ):
     """Admin-only endpoint to process and ingest documents into Qdrant Vector DB"""
@@ -592,12 +603,11 @@ async def upload_rag_document(
     con = rag_store.connect()
     try:
         rag_store.ensure_schema(con)
-        kb_id = rag_store.kb_id_for_code(con, rag_store.DEFAULT_KB_CODE)
-        if not kb_id:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Default knowledge base '{rag_store.DEFAULT_KB_CODE}' not found",
-            )
+        # Auto-sort by topic: an admin-typed topic wins; otherwise derive one
+        # from the filename so re-uploading "SmartHR-FAQ.pdf" always lands in
+        # the same "smarthr_faq" knowledge base without any manual picking.
+        topic_code = rag_store.slugify_topic(topic) if topic and topic.strip() else rag_store.slugify_topic(file.filename)
+        kb_id = rag_store.get_or_create_kb(con, topic_code, name=(topic.strip() if topic and topic.strip() else None))
         doc_id = rag_store.create_document(
             con, kb_id, title=file.filename, source_type="upload",
             mime_type=file.content_type,
@@ -626,7 +636,21 @@ async def upload_rag_document(
         "extracted_chars": len(content_text),
         "chunks_stored": stored,
         "document_id": doc_id,
+        "topic": topic_code,
     }
+
+
+@app.get("/api/admin/rag/topics")
+async def list_rag_topics(_admin: bool = Depends(verify_pocketbase_admin)):
+    """All knowledge-base topics (for the upload topic picker), not just ones
+    that already have chunks — so an admin can see/reuse a freshly auto-created
+    but still-empty topic too."""
+    con = rag_store.connect()
+    try:
+        rag_store.ensure_schema(con)
+        return {"topics": rag_store.list_all_kbs(con)}
+    finally:
+        con.close()
 
 
 # --- Admin config + usage (read) --------------------------------------------
@@ -770,6 +794,44 @@ async def delete_rag_chunk(
         if not rag_store.delete_chunk(con, chunk_id):
             raise HTTPException(status_code=404, detail="Chunk not found")
         return {"status": "deleted", "chunk_id": chunk_id}
+    finally:
+        con.close()
+
+
+class ChunkEdit(BaseModel):
+    content: Optional[str] = None
+    section_title: Optional[str] = None
+
+
+@app.put("/api/admin/rag/{chunk_id}")
+async def edit_rag_chunk(
+    chunk_id: str,
+    edit: ChunkEdit,
+    _admin: bool = Depends(verify_pocketbase_admin),
+):
+    """Edit a chunk's content and/or section title. If content changes, the
+    vector is re-embedded and re-stored so search stays accurate — otherwise
+    an edited chunk would keep matching (or failing to match) queries based on
+    its stale old text."""
+    if edit.content is None and edit.section_title is None:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    con = rag_store.connect()
+    try:
+        rag_store.ensure_schema(con)
+        rowid = rag_store.update_chunk_content(con, chunk_id, edit.content, edit.section_title)
+        if rowid is None:
+            raise HTTPException(status_code=404, detail="Chunk not found")
+        if edit.content is not None:
+            try:
+                vec = await embed_text(edit.content)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Content saved, but re-embedding failed ({rag_store.EMBED_MODEL}): {e}. Run backfill to retry.",
+                )
+            rag_store.store_vector_for_rowid(con, rowid, vec)
+            con.commit()
+        return {"status": "updated", "chunk_id": chunk_id}
     finally:
         con.close()
 
@@ -963,11 +1025,15 @@ async def chat_endpoint(request: Request):
         # start (Ollama down, bad key, etc.) advances to the next.
         stream = client = provider = None
         model_name = ""
+        first_tier = candidates[0] if candidates else None
+        first_tier_failed = False
         for target_model in candidates:
             try:
                 client, model_name, provider = await resolve_client(target_model, local_model_pref)
             except Exception as e:
                 print(f"Tier '{target_model}' unavailable, trying next: {e}")
+                if target_model == first_tier:
+                    first_tier_failed = True
                 continue
             try:
                 stream = await open_chat_stream(client, model_name, messages, provider)
@@ -975,8 +1041,42 @@ async def chat_endpoint(request: Request):
                 break
             except Exception as e:
                 print(f"Tier '{target_model}' failed to start, trying next: {e}")
+                if target_model == first_tier:
+                    first_tier_failed = True
                 stream = None
                 continue
+
+        # Self-heal the ADMIN'S saved default: if the tier they picked in
+        # Admin -> AI Models is broken (bad gateway config, provider outage,
+        # etc.), silently leaving it selected means every future chat keeps
+        # retrying a known-dead tier before ever reaching a working one —
+        # pure wasted latency and a worse user experience each time. Only do
+        # this when the failure is of the *admin's persisted default*
+        # (not a one-off per-chat model pick via `forced_first`), and only
+        # if it isn't already deepseek, so there's something to roll back to.
+        if (
+            first_tier_failed
+            and not forced_first
+            and not vision_mode
+            and routing_model != "deepseek"
+        ):
+            try:
+                heal_con = rag_store.connect()
+                try:
+                    rag_store.ensure_schema(heal_con)
+                    heal_cfg = rag_store.get_config(heal_con)
+                    if heal_cfg.get("active_model") == routing_model:
+                        heal_cfg["active_model"] = "deepseek"
+                        rag_store.save_config(heal_con, heal_cfg)
+                        print(
+                            f"⚠️  Auto-rollback: active model '{routing_model}' failed to start, "
+                            f"reset Admin -> AI Models to 'deepseek' so future chats don't keep "
+                            f"hitting it. Fix '{routing_model}' and re-select it once it's healthy."
+                        )
+                finally:
+                    heal_con.close()
+            except Exception as e:
+                print(f"Auto-rollback of active_model failed (non-fatal): {e}")
 
         if stream is None:
             # Every tier exhausted (all down or over budget) -> degrade politely.

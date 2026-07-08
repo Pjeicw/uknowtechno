@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { MessageSquare, X, Send, Paperclip, Mic, Maximize2, Minimize2, PanelLeftClose, PanelLeft, Plus, Edit2, Trash2, Check, Copy, Share2, Settings, Sparkles, ChevronLeft } from 'lucide-react';
+import { MessageSquare, X, Send, Paperclip, Mic, Maximize2, Minimize2, PanelLeftClose, PanelLeft, Plus, Edit2, Trash2, Check, Copy, Share2, Settings, Sparkles, ChevronLeft, ShieldCheck, LogOut } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import AdminPanel from './AdminPanel';
 
 type Message = { role: 'user' | 'ai'; content: string };
 type Thread = { id: string; title: string; messages: Message[] };
@@ -55,9 +56,10 @@ export default function ChatWidget() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [adminDevToken, setAdminDevToken] = useState('');
   const [adminError, setAdminError] = useState('');
   const [adminBusy, setAdminBusy] = useState(false);
+  // Admin panel now renders inline as an overlay instead of a separate /admin route.
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -108,35 +110,86 @@ export default function ChatWidget() {
     } catch { /* offline: keep defaults */ }
   }, []);
 
-  // Save the token so the /admin page opens already authenticated, then go there.
+  // Save the token and open the admin panel as an inline overlay (no /admin route).
   const openAdmin = (token: string) => {
     localStorage.setItem('admin_token', token);
-    window.location.href = '/admin';
+    setShowAdminPanel(true);
+    setShowSettingsModal(false);
+    setAdminEmail('');
+    setAdminPassword('');
+    setShowAdminLogin(false);
   };
 
   const handleAdminLogin = async () => {
     setAdminError('');
     setAdminBusy(true);
     try {
-      const res = await fetch(`${POCKETBASE_URL}/api/collections/${PB_COLLECTION}/auth-with-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identity: adminEmail, password: adminPassword }),
-      });
-      if (!res.ok) throw new Error('Invalid credentials');
-      const data = await res.json();
-      if (!data.token) throw new Error('No token returned');
+      // The #1 real cause of "unreachable" when PocketBase is *actually*
+      // running (confirmed via its own /_/ admin UI): the site is being
+      // viewed over https (production, e.g. https://uknowtechno.com) while
+      // VITE_POCKETBASE_URL is still the http://localhost:8090 build
+      // default. Browsers silently block that as mixed content — it fails
+      // as a plain network error with no explanation, which is exactly
+      // what "can't reach the auth server" looked like. Catch it up front
+      // with a specific, actionable message instead of trying and failing.
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && POCKETBASE_URL.startsWith('http://')) {
+        throw new Error(
+          `This page is loaded over https, but the auth server URL (${POCKETBASE_URL}) is http — browsers block that as "mixed content" (it never even reaches PocketBase). ` +
+          `PocketBase running fine locally doesn't fix this: the production build needs VITE_POCKETBASE_URL set to an https address (e.g. https://auth.uknowtechno.com via the Cloudflare Tunnel from DEPLOY.md), then rebuilt and redeployed.`
+        );
+      }
+
+      let res: Response;
+      try {
+        res = await fetch(`${POCKETBASE_URL}/api/collections/${PB_COLLECTION}/auth-with-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: adminEmail, password: adminPassword }),
+        });
+      } catch {
+        // fetch() itself throwing (and it's not the mixed-content case
+        // above) means the request never reached PocketBase at all — wrong
+        // port/host, PocketBase not running, CORS blocked, or offline.
+        throw new Error(
+          `Can't reach the auth server at ${POCKETBASE_URL}. Double-check: is PocketBase actually running there (not just reachable at 127.0.0.1:8090 from the Mac Mini itself — this page needs to reach that same address from wherever *it's* loaded), and does PocketBase's Settings → Application → allowed origins include this site's origin?`
+        );
+      }
+
+      // Previously any non-OK response (wrong password, wrong collection
+      // name, 404 from an old PocketBase version, etc.) was collapsed into a
+      // single hardcoded "Invalid credentials" — so a *correct* password
+      // could still show "Invalid credentials" for an unrelated reason.
+      // Read PocketBase's own error body and show the real cause.
+      const data = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error(
+            `Auth collection "${PB_COLLECTION}" not found (HTTP 404). Older PocketBase builds use "admins" instead of "_superusers" — check your PocketBase version and VITE_POCKETBASE_COLLECTION.`
+          );
+        }
+        const serverMsg = data?.message;
+        throw new Error(serverMsg ? `${serverMsg} (HTTP ${res.status})` : `Login failed (HTTP ${res.status})`);
+      }
+      if (!data.token) throw new Error('PocketBase accepted the login but returned no token — unexpected response shape.');
       openAdmin(data.token);
     } catch (err) {
       setAdminError((err as Error).message || 'Login failed');
+      // A wrong password should never leave OpenAI (or any locked model)
+      // sitting selected in the picker — force it back to the always-on
+      // default so a failed admin login can't strand the chat on a model it
+      // was never actually authorized to use.
+      setSelectedModel('deepseek');
+      // Never leave a typed password sitting in state after a failed
+      // attempt either — the error message stays so the admin knows what
+      // happened, but the credential fields themselves always come back empty.
+      setAdminEmail('');
+      setAdminPassword('');
     } finally {
       setAdminBusy(false);
     }
   };
 
-  const handleDevAdminLogin = () => {
-    if (adminDevToken.trim()) openAdmin(adminDevToken.trim());
-  };
+  const closeAdminPanel = () => setShowAdminPanel(false);
 
   const handleOpenSettings = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -150,9 +203,38 @@ export default function ChatWidget() {
     await fetchStatus();
     setIsRetrying(false);
   };
+
+  // AI settings panel + its "AI SETTINGS" toggle button share this ref so a
+  // click anywhere else (chat messages, sidebar, outside the widget) closes
+  // the panel — it previously stayed open until you clicked the toggle again.
+  const settingsAreaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showSettingsModal) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (settingsAreaRef.current && !settingsAreaRef.current.contains(e.target as Node)) {
+        setShowSettingsModal(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showSettingsModal]);
+
+  // The admin email/password fields are for admin use only — a general user
+  // should never see them pre-filled or even expanded by default. So every
+  // time AI settings closes, collapse the "Admin login" toggle back to
+  // hidden and wipe anything typed, instead of leaving it sitting in state
+  // for whoever opens settings next.
+  useEffect(() => {
+    if (showSettingsModal) return;
+    setShowAdminLogin(false);
+    setAdminEmail('');
+    setAdminPassword('');
+    setAdminError('');
+  }, [showSettingsModal]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentThread = threads.find(t => t.id === currentThreadId) || threads[0];
@@ -292,7 +374,20 @@ export default function ChatWidget() {
         updateThreadMessages([...newMessages, { role: 'ai', content: t('chatRateLimited') }]);
         return;
       }
-      if (!response.ok) throw new Error(`Backend returned ${response.status}`);
+      if (!response.ok) {
+        // Previously this always threw a generic "Backend returned <status>"
+        // which the catch block below turned into the blanket "AI Engine
+        // Offline for Maintenance" message — so an admin-only 403 (e.g.
+        // picking OpenAI without being logged in) looked identical to the
+        // backend actually being down. Read the real reason from the
+        // response body and surface THAT instead; mark it so the catch
+        // block below knows the backend is reachable (it responded!),
+        // it just declined this specific request.
+        const body = await response.json().catch(() => ({} as any));
+        const apiErr = new Error(body?.detail || `Backend returned ${response.status}`);
+        (apiErr as Error & { isApiError?: boolean }).isApiError = true;
+        throw apiErr;
+      }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -324,14 +419,24 @@ export default function ChatWidget() {
     } catch (error) {
       // AbortError (timeout) or a network failure both mean "backend unreachable".
       const isTimeout = (error as Error)?.name === 'AbortError';
+      const isApiError = (error as Error & { isApiError?: boolean })?.isApiError;
       console.error("Chat error:", error);
       updateThreadMessages([
         ...newMessages,
-        { role: 'ai', content: isTimeout ? t('chatTimeout') : t('chatOffline') },
+        {
+          role: 'ai',
+          // isApiError = the backend responded and explicitly rejected the
+          // request (wrong permissions, etc.) — show its real reason instead
+          // of the generic offline copy, which was actively misleading here.
+          content: isApiError ? (error as Error).message : isTimeout ? t('chatTimeout') : t('chatOffline'),
+        },
       ]);
-      // Reflect offline state immediately in the header/status dot.
-      setActiveModelConfig('Offline');
-      setFallbackReason(isTimeout ? 'Request timed out' : 'Backend Server Offline');
+      // Only a genuine unreachable/timeout means the backend is offline —
+      // an API-level rejection (403/400/etc.) means it's very much online.
+      if (!isApiError) {
+        setActiveModelConfig('Offline');
+        setFallbackReason(isTimeout ? 'Request timed out' : 'Backend Server Offline');
+      }
     } finally {
       clearTimeout(connectTimer);
       setIsTyping(false);
@@ -391,7 +496,21 @@ export default function ChatWidget() {
     : { backgroundColor: 'rgba(10, 25, 47, 0.95)', backdropFilter: 'blur(15px)' };
 
   return (
-    <div className={`fixed z-50 ${isFullScreen ? 'inset-0' : 'bottom-6 right-6'}`}>
+    // z-[10010] — deliberately above the custom cursor (9999) and its rocket
+    // trail dots (9998, see index.css). At the old z-50 those kept rendering
+    // on top of the open chat panel, visually "covering" the AI settings
+    // button with a stream of glowing dot particles whenever the mouse moved.
+    //
+    // Side effect of that fix: the site hides the real OS cursor globally
+    // (body { cursor: none }) and draws a custom rocket cursor instead. Once
+    // the chat sits *above* that custom cursor in the stacking order, the
+    // rocket renders underneath the panel and — since the real cursor is
+    // still suppressed — the mouse became invisible while over the open
+    // chat. Force the real cursor back on for this panel specifically.
+    <div
+      className={`fixed z-[10010] ${isFullScreen ? 'inset-0' : 'bottom-6 right-6'}`}
+      style={isOpen ? { cursor: 'auto' } : undefined}
+    >
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -456,7 +575,7 @@ export default function ChatWidget() {
                     ))}
                   </div>
                   
-                  <div className="p-3 border-t border-[#1e293b] mt-auto">
+                  <div ref={settingsAreaRef} className="p-3 border-t border-[#1e293b] mt-auto">
                     <AnimatePresence>
                       {showSettingsModal && (
                         <motion.div
@@ -466,109 +585,153 @@ export default function ChatWidget() {
                           className="overflow-hidden"
                         >
                           <div className="mb-2 bg-[#112240] border border-[#1e293b] rounded-xl whitespace-normal max-h-[65vh] overflow-y-auto">
-                            <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-3 border-b border-[#1e293b] bg-[#112240] rounded-t-xl">
-                              <button onClick={() => setShowSettingsModal(false)} className="-ml-1 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors" title="Back">
+                            <div className="sticky top-0 z-10 flex items-center gap-2 px-5 py-3.5 border-b border-[#1e293b] bg-[#112240] rounded-t-xl">
+                              <button onClick={() => setShowSettingsModal(false)} className="-ml-1 p-1 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors rounded-md hover:bg-[#1e293b]" title="Back">
                                 <ChevronLeft size={18} />
                               </button>
                               <span className="text-sm font-semibold text-white">AI settings</span>
                             </div>
-                            <div className="p-4">
-                            <div className="flex items-center gap-2 mb-4">
-                              <span className={`w-2 h-2 rounded-full ${activeModelConfig === 'Offline' ? 'bg-red-500' : activeModelConfig.includes('Fallback') ? 'bg-yellow-500' : 'bg-[var(--accent-cyan)]'}`}></span>
-                              <span className="text-white text-sm font-medium capitalize">{activeModelConfig.replace('-', ' ')}</span>
-                            </div>
-                            {fallbackReason && (
-                              <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
-                                <div className="text-[10px] text-red-400 font-medium mb-1 uppercase tracking-wide">Reason</div>
-                                <div className="text-xs text-gray-300 mb-2">{fallbackReason}</div>
-                                <button onClick={handleRetry} disabled={isRetrying} className="w-full text-xs font-medium py-1.5 rounded-md bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-all">
-                                  {isRetrying ? 'Retrying…' : 'Retry connection'}
-                                </button>
+
+                            <div className="p-5 space-y-6">
+                              {/* Connection status */}
+                              <div className="flex items-center gap-2.5 px-1">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${activeModelConfig === 'Offline' ? 'bg-red-500' : activeModelConfig.includes('Fallback') ? 'bg-yellow-500' : 'bg-[var(--accent-cyan)]'}`}></span>
+                                <span className="text-white text-sm font-medium capitalize">{activeModelConfig.replace('-', ' ')}</span>
                               </div>
-                            )}
-                            <div className="mb-4">
-                              <label className="block text-xs text-[var(--accent-cyan)] mb-1.5">Model</label>
-                              <select
-                                value={selectedModel}
-                                onChange={(e) => setSelectedModel(e.target.value)}
-                                className="w-full h-9 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
-                              >
-                                {modelOptions.map((m) => (
-                                  <option key={m.id} value={m.id} disabled={m.locked}>
-                                    {m.label}{m.locked ? ' 🔒' : ''}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="mb-4">
-                              <label className="block text-xs text-[var(--accent-cyan)] mb-1.5">Knowledge (RAG) · pick any</label>
-                              <div className="flex flex-col gap-1">
-                                {kbOptions.map((k) => (
-                                  <label key={k.code} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#0a192f] border border-[#1e293b] cursor-pointer">
-                                    <input type="checkbox" checked={selectedKbs.includes(k.code)} onChange={() => toggleKb(k.code)} className="accent-[var(--accent-cyan)]" />
-                                    <span className="text-sm text-gray-200">{k.label}</span>
-                                  </label>
-                                ))}
-                                {kbOptions.length === 0 && (
-                                  <div className="text-xs text-gray-500">No knowledge bases yet</div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="border-t border-[#1e293b] pt-3">
-                              <button
-                                type="button"
-                                onClick={() => setShowAdminLogin((s) => !s)}
-                                className="flex items-center gap-1 text-xs text-gray-400 hover:text-[var(--accent-cyan)] transition-colors"
-                              >
-                                <span>{showAdminLogin ? '▾' : '▸'}</span> Admin login
-                              </button>
-                              {showAdminLogin && (
-                                <div className="mt-2 flex flex-col gap-2">
-                                  <input
-                                    type="email"
-                                    value={adminEmail}
-                                    onChange={(e) => setAdminEmail(e.target.value)}
-                                    placeholder="admin@uknowtechno.com"
-                                    className="h-9 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
-                                  />
-                                  <input
-                                    type="password"
-                                    value={adminPassword}
-                                    onChange={(e) => setAdminPassword(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
-                                    placeholder="Password"
-                                    className="h-9 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)]"
-                                  />
-                                  {adminError && <div className="text-xs text-red-400">{adminError}</div>}
-                                  <button
-                                    type="button"
-                                    onClick={handleAdminLogin}
-                                    disabled={adminBusy}
-                                    className="h-9 bg-[var(--accent-cyan)] text-[#0a192f] rounded-lg text-sm font-medium hover:brightness-110 disabled:opacity-60 transition-all"
-                                  >
-                                    {adminBusy ? 'Signing in…' : 'Log in and open admin'}
+
+                              {fallbackReason && (
+                                <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg space-y-2.5">
+                                  <div className="text-[10px] text-red-400 font-semibold uppercase tracking-wide">Reason</div>
+                                  <div className="text-xs text-gray-300 leading-relaxed">{fallbackReason}</div>
+                                  <button onClick={handleRetry} disabled={isRetrying} className="w-full text-xs font-medium py-2 rounded-md bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition-all">
+                                    {isRetrying ? 'Retrying…' : 'Retry connection'}
                                   </button>
-                                  <div className="flex gap-2 pt-1">
-                                    <input
-                                      type="password"
-                                      value={adminDevToken}
-                                      onChange={(e) => setAdminDevToken(e.target.value)}
-                                      onKeyDown={(e) => e.key === 'Enter' && handleDevAdminLogin()}
-                                      placeholder="Local dev token"
-                                      className="flex-1 h-8 px-2 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-xs outline-none focus:border-[var(--accent-cyan)]"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={handleDevAdminLogin}
-                                      className="px-3 h-8 bg-[#1e293b] text-[var(--accent-cyan)] rounded-lg text-xs font-medium hover:bg-[#243044] transition-all"
-                                    >
-                                      Enter
-                                    </button>
-                                  </div>
-                                  <div className="text-[11px] text-gray-500">Opens the admin page after login.</div>
                                 </div>
                               )}
-                            </div>
+
+                              {/* Model picker */}
+                              <div className="space-y-2">
+                                <label className="block text-xs font-medium text-[var(--accent-cyan)] px-0.5">Model</label>
+                                <select
+                                  value={selectedModel}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const picked = modelOptions.find((m) => m.id === val);
+                                    if (picked?.locked) {
+                                      // Previously this option was just `disabled` — clicking it
+                                      // silently did nothing, with no explanation. Now it's
+                                      // selectable, but picking it opens the admin login form
+                                      // instead of actually switching the model.
+                                      setShowAdminLogin(true);
+                                      setAdminError('OpenAI is admin-only — log in below to unlock it.');
+                                      return;
+                                    }
+                                    setSelectedModel(val);
+                                  }}
+                                  className="w-full h-10 px-3 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)] transition-colors"
+                                >
+                                  {modelOptions.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.label}{m.locked ? ' 🔒 (admin login required)' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Knowledge base picker */}
+                              <div className="space-y-2">
+                                <label className="block text-xs font-medium text-[var(--accent-cyan)] px-0.5">Knowledge (RAG) · pick any</label>
+                                <div className="flex flex-col gap-2">
+                                  {kbOptions.map((k) => (
+                                    <label key={k.code} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[#0a192f] border border-[#1e293b] cursor-pointer hover:border-[var(--accent-cyan)]/40 transition-colors">
+                                      <input type="checkbox" checked={selectedKbs.includes(k.code)} onChange={() => toggleKb(k.code)} className="accent-[var(--accent-cyan)]" />
+                                      <span className="text-sm text-gray-200">{k.label}</span>
+                                    </label>
+                                  ))}
+                                  {kbOptions.length === 0 && (
+                                    <div className="text-xs text-gray-500 px-3 py-2 rounded-lg bg-[#0a192f]/60 border border-[#1e293b]/60">No knowledge bases yet</div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Admin access */}
+                              <div className="border-t border-[#1e293b] pt-5 space-y-3">
+                                {localStorage.getItem('admin_token') ? (
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowAdminPanel(true)}
+                                      className="flex-1 flex items-center justify-center gap-2 h-10 bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)] border border-[var(--accent-cyan)]/30 rounded-lg text-sm font-medium hover:bg-[var(--accent-cyan)]/20 transition-all"
+                                    >
+                                      <ShieldCheck size={16} /> Open admin panel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        // Clears a saved (or now-stale) admin token without having
+                                        // to open the full admin panel just to hit "Sign out" — this
+                                        // is what makes the toggle+login form reappear next time.
+                                        localStorage.removeItem('admin_token');
+                                        fetchPickers();
+                                      }}
+                                      title="Sign out of admin (clears the saved token)"
+                                      className="h-10 w-10 flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-red-400/10 border border-[#1e293b] rounded-lg transition-all shrink-0"
+                                    >
+                                      <LogOut size={16} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowAdminLogin((s) => !s)}
+                                      className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-[var(--accent-cyan)] transition-colors"
+                                    >
+                                      <span>{showAdminLogin ? '▾' : '▸'}</span> Admin login
+                                    </button>
+                                    {showAdminLogin && (
+                                      <div className="flex flex-col gap-3 pt-1">
+                                        <input
+                                          type="email"
+                                          value={adminEmail}
+                                          onChange={(e) => setAdminEmail(e.target.value)}
+                                          placeholder="admin@uknowtechno.com"
+                                          autoComplete="off"
+                                          className="h-10 px-3.5 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)] transition-colors"
+                                        />
+                                        <input
+                                          type="password"
+                                          value={adminPassword}
+                                          onChange={(e) => setAdminPassword(e.target.value)}
+                                          onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
+                                          placeholder="Password"
+                                          // "new-password" (rather than "off", which some browsers
+                                          // ignore for password fields) discourages the browser's
+                                          // own save-password / autofill prompt — this field is
+                                          // deliberately never persisted anywhere, in-app or by the
+                                          // browser, since it's an admin-only credential a general
+                                          // visitor shouldn't be prompted to save.
+                                          autoComplete="new-password"
+                                          className="h-10 px-3.5 bg-[#0a192f] border border-[#1e293b] rounded-lg text-white text-sm outline-none focus:border-[var(--accent-cyan)] transition-colors"
+                                        />
+                                        {adminError && (
+                                          <div className="text-xs text-red-400 leading-relaxed p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                                            {adminError}
+                                          </div>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={handleAdminLogin}
+                                          disabled={adminBusy}
+                                          className="h-10 bg-[var(--accent-cyan)] text-[#0a192f] rounded-lg text-sm font-semibold hover:brightness-110 disabled:opacity-60 transition-all"
+                                        >
+                                          {adminBusy ? 'Signing in…' : 'Log in'}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </motion.div>
@@ -758,6 +921,26 @@ export default function ChatWidget() {
           </span>
         </button>
       )}
+
+      {/* Admin panel — inline overlay (replaces the old /admin route). Reached
+          only via a successful login in AI settings above; never a public URL. */}
+      <AnimatePresence>
+        {showAdminPanel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            // `flex justify-center` actively centers the panel horizontally
+            // instead of relying only on the panel's own `mx-auto` (which
+            // does nothing extra once padding is this generous) — combined
+            // with real px/py here, the panel can no longer sit flush against
+            // any edge regardless of viewport size.
+            className="fixed inset-0 z-[100] bg-[#0A192F]/98 backdrop-blur-sm overflow-y-auto flex justify-center px-5 py-10 md:px-12 md:py-16"
+          >
+            <AdminPanel onClose={closeAdminPanel} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

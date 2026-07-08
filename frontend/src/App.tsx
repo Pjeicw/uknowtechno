@@ -1,20 +1,73 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import CanvasBackground from './components/CanvasBackground';
-import Hero3D from './components/Hero3D';
-import Hero from './components/Hero';
+import BusinessHero from './components/BusinessHero';
+import AppsShowcase from './components/AppsShowcase';
+import Services from './components/Services';
+import TrustStack from './components/TrustStack';
+import Connect from './components/Connect';
 import About from './components/About';
 import Skills from './components/Skills';
 import Experience from './components/Experience';
 import Education from './components/Education';
-import Projects from './components/Projects';
 import Contact from './components/Contact';
 import ChatWidget from './components/ChatWidget';
-import AdminPanel from './components/AdminPanel';
+import Logo from './components/Logo';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import React, { useState, useEffect, useRef } from 'react';
+import { Home, Smartphone, Briefcase, Cpu, Share2, User, Award, GraduationCap } from 'lucide-react';
+
+const HOME_SECTIONS = [
+  { id: 'hero', key: 'scrollHome' },
+  { id: 'apps', key: 'scrollApps' },
+  { id: 'services', key: 'scrollServices' },
+  { id: 'stack', key: 'scrollStack' },
+  { id: 'connect', key: 'scrollConnect' },
+];
+
+const ABOUT_SECTIONS = [
+  { id: 'synopsis', key: 'scrollAbout' },
+  { id: 'arsenal', key: 'scrollSkills' },
+  { id: 'blueprint', key: 'scrollExperience' },
+  { id: 'education', key: 'scrollEducation' },
+];
+
+// Icons paired with each nav label so mobile can collapse long text down to
+// icon-only once the drawer gets too narrow to show full words (see
+// .nav-icon / .nav-label rules in index.css).
+const HOME_NAV_ICONS: Record<string, React.ReactNode> = {
+  hero: <Home size={18} className="nav-icon" />,
+  apps: <Smartphone size={18} className="nav-icon" />,
+  services: <Briefcase size={18} className="nav-icon" />,
+  stack: <Cpu size={18} className="nav-icon" />,
+  connect: <Share2 size={18} className="nav-icon" />,
+};
+const ABOUT_NAV_ICONS: Record<string, React.ReactNode> = {
+  synopsis: <User size={18} className="nav-icon" />,
+  arsenal: <Award size={18} className="nav-icon" />,
+  blueprint: <Briefcase size={18} className="nav-icon" />,
+  education: <GraduationCap size={18} className="nav-icon" />,
+};
+
+// Cross-page anchor links (e.g. footer "Services" clicked while on /about)
+// need a client-side scroll pass once the target page has rendered, since
+// react-router doesn't auto-scroll to a hash on navigation.
+function ScrollToHash() {
+  const location = useLocation();
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.slice(1);
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [location.pathname, location.hash]);
+  return null;
+}
 
 function NavBar() {
   const { language, toggleLanguage, t } = useLanguage();
+  const location = useLocation();
+  const isAboutPage = location.pathname.startsWith('/about');
   const [isOpen, setIsOpen] = useState(false);
   const [theme, setTheme] = useState('cyan');
   const [isVisible, setIsVisible] = useState(true);
@@ -28,7 +81,7 @@ function NavBar() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY < 50) {
         setIsVisible(true);
       } else if (currentScrollY > lastScrollY.current) {
@@ -36,15 +89,15 @@ function NavBar() {
       } else if (currentScrollY < lastScrollY.current) {
         setIsVisible(true);
       }
-      
+
       lastScrollY.current = currentScrollY;
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
+
   const themes = ['cyan', 'purple', 'green', 'orange'];
-  
+
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
   }, []);
@@ -61,17 +114,34 @@ function NavBar() {
       <div className="menu-toggle" onClick={() => setIsOpen(!isOpen)}>
         <span>{isOpen ? '✕' : '☰'}</span>
       </div>
+      {/* Tap outside the drawer to close it (mobile only — CSS keeps this
+          invisible/inert on desktop). */}
+      <div className={`nav-backdrop ${isOpen ? 'active' : ''}`} onClick={() => setIsOpen(false)} />
       <nav className={`nav-menu ${isVisible || isOpen ? 'active' : ''} ${isOpen ? 'mobile-open' : ''}`} id="navMenu">
         <div className="nav-container">
-          <a href="#hero" className="nav-logo">UknowTechno</a>
-          <ul className="nav-links">
-            <li><a href="#synopsis" onClick={() => setIsOpen(false)}>{t('navAbout')}</a></li>
-            <li><a href="#arsenal" onClick={() => setIsOpen(false)}>{t('navSkills')}</a></li>
-            <li><a href="#blueprint" onClick={() => setIsOpen(false)}>{t('navExperience')}</a></li>
-            <li><a href="#education" onClick={() => setIsOpen(false)}>{t('navEducation')}</a></li>
-            <li><a href="#projects" onClick={() => setIsOpen(false)}>{t('navProjects')}</a></li>
-            <li><a href="#contact" onClick={() => setIsOpen(false)}>{t('navContact')}</a></li>
-          </ul>
+          <Link to="/" className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }} onClick={() => setIsOpen(false)}>
+            <Logo size={32} />
+            <span>UknowTechno</span>
+          </Link>
+          {isAboutPage ? (
+            <ul className="nav-links">
+              <li><Link to="/" onClick={() => setIsOpen(false)}><Home size={18} className="nav-icon" /><span className="nav-label">{t('navHome')}</span></Link></li>
+              {ABOUT_SECTIONS.map((sec) => (
+                <li key={sec.id}>
+                  <a href={`#${sec.id}`} onClick={() => setIsOpen(false)}>{ABOUT_NAV_ICONS[sec.id]}<span className="nav-label">{t(sec.key as any)}</span></a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="nav-links">
+              <li><a href="#hero" onClick={() => setIsOpen(false)}>{HOME_NAV_ICONS.hero}<span className="nav-label">{t('navHome')}</span></a></li>
+              <li><a href="#apps" onClick={() => setIsOpen(false)}>{HOME_NAV_ICONS.apps}<span className="nav-label">{t('navApps')}</span></a></li>
+              <li><a href="#services" onClick={() => setIsOpen(false)}>{HOME_NAV_ICONS.services}<span className="nav-label">{t('navServices')}</span></a></li>
+              <li><a href="#stack" onClick={() => setIsOpen(false)}>{HOME_NAV_ICONS.stack}<span className="nav-label">{t('navSkills')}</span></a></li>
+              <li><a href="#connect" onClick={() => setIsOpen(false)}>{HOME_NAV_ICONS.connect}<span className="nav-label">{t('navConnect')}</span></a></li>
+              <li><Link to="/about" onClick={() => setIsOpen(false)}><User size={18} className="nav-icon" /><span className="nav-label">{t('navAboutMe')}</span></Link></li>
+            </ul>
+          )}
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button className="lang-toggle" onClick={toggleLanguage}>
               <span>🌐</span> <span>{language.toUpperCase()}</span>
@@ -99,7 +169,7 @@ function CustomCursor() {
     if (!hasPointer) return;
     let lastX = 0;
     let lastY = 0;
-    
+
     const createTrail = (x: number, y: number, dx: number, dy: number) => {
       const mag = Math.sqrt(dx * dx + dy * dy) || 1;
       const nx = dx / mag;
@@ -112,12 +182,12 @@ function CustomCursor() {
       trail.className = 'rocket-trail';
       trail.style.left = trailX + 'px';
       trail.style.top = trailY + 'px';
-      
+
       // Randomize size and rotation for realistic fire
       const size = 6 + Math.random() * 6;
       trail.style.width = size + 'px';
       trail.style.height = size + 'px';
-      
+
       document.body.appendChild(trail);
       setTimeout(() => trail.remove(), 600);
     };
@@ -125,18 +195,18 @@ function CustomCursor() {
     const handleMouseMove = (e: MouseEvent) => {
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
-      
+
       if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
         const newAngle = Math.atan2(dy, dx) * (180 / Math.PI);
         setAngle(newAngle + 90); // SVG points up by default, so offset by 90
       }
-      
+
       lastX = e.clientX;
       lastY = e.clientY;
       setPos({ x: e.clientX, y: e.clientY });
-      
+
       if (Math.random() > 0.3 && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
-          createTrail(e.clientX, e.clientY, dx, dy);
+        createTrail(e.clientX, e.clientY, dx, dy);
       }
     };
 
@@ -147,7 +217,7 @@ function CustomCursor() {
         setIsHover(false);
       }
     };
-    
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseover', handleMouseOver);
     return () => {
@@ -161,7 +231,7 @@ function CustomCursor() {
   return (
     <div
       className={`custom-cursor-rocket ${isHover ? 'hover' : ''}`}
-      style={{ 
+      style={{
         transform: `translate(${pos.x}px, ${pos.y}px) rotate(${angle}deg)`,
         position: 'fixed',
         top: -16,
@@ -187,31 +257,22 @@ function CustomCursor() {
   );
 }
 
-
-
 function FloatingControls() {
   const { t } = useLanguage();
-  const [activeSection, setActiveSection] = useState('hero');
+  const location = useLocation();
+  const isAboutPage = location.pathname.startsWith('/about');
+  const sections = isAboutPage ? ABOUT_SECTIONS : HOME_SECTIONS;
+  const [activeSection, setActiveSection] = useState(sections[0].id);
   const [showIndicators, setShowIndicators] = useState(false);
-
-  const sections = [
-    { id: 'hero', key: 'scrollHome' },
-    { id: 'synopsis', key: 'scrollAbout' },
-    { id: 'arsenal', key: 'scrollSkills' },
-    { id: 'blueprint', key: 'scrollExperience' },
-    { id: 'education', key: 'scrollEducation' },
-    { id: 'projects', key: 'scrollProjects' },
-    { id: 'contact', key: 'scrollContact' }
-  ];
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      
+
       const atTop = scrollTop < 100;
       const atBottom = (window.innerHeight + scrollTop) >= document.body.offsetHeight - 100;
       const shouldShow = !atTop && !atBottom && scrollTop > window.innerHeight / 3;
-      
+
       setShowIndicators(shouldShow);
     };
 
@@ -235,7 +296,7 @@ function FloatingControls() {
       sectionElements.forEach(section => observer.unobserve(section));
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [location.pathname]);
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -254,10 +315,10 @@ function FloatingControls() {
         ))}
       </div>
       <div className={`floating-buttons ${showIndicators ? 'visible' : 'hidden'}`}>
-        <button 
-          className="float-btn float-top" 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} 
-          title={t('floatTopTitle')} 
+        <button
+          className="float-btn float-top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          title={t('floatTopTitle')}
           aria-label={t('floatTopAria')}
         >
           ↑
@@ -287,7 +348,35 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 }
 
-function PortfolioLayout() {
+function HomeLayout() {
+  return (
+    <>
+      <BusinessHero />
+      <AppsShowcase />
+      <Services />
+      <TrustStack />
+      <Connect />
+      <Contact />
+    </>
+  );
+}
+
+function AboutPageLayout() {
+  return (
+    <>
+      <About />
+      <Skills />
+      <Experience />
+      <Education />
+      {/* Project Showcase and the "Get in Touch" contact block already live
+          on the home page now — only the footer (product/nav links) repeats
+          here, so About isn't a dead end. */}
+      <Contact showContactSection={false} />
+    </>
+  );
+}
+
+function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <NavBar />
@@ -295,47 +384,13 @@ function PortfolioLayout() {
       <CanvasBackground />
       <div className="aurora-bg"></div>
       <div className="scan-lines"></div>
-      
+
       <div style={{ position: 'relative', zIndex: 10 }}>
-        <Hero />
-        <About />
-        <Skills />
-        <Experience />
-        <Education />
-        <Projects />
-        <Contact />
+        {children}
       </div>
-      
+
       <ChatWidget />
     </ErrorBoundary>
-  );
-}
-
-function AdminLayout() {
-  return (
-    <div className="admin-layout relative z-10 min-h-screen bg-[#0A192F] overflow-hidden flex flex-col">
-      <CanvasBackground />
-      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
-        <Hero3D />
-      </div>
-      
-      {/* Admin Header */}
-      <header className="relative z-20 w-full p-4 md:p-6 md:px-10 flex justify-between items-center gap-3 border-b border-[var(--accent-cyan)]/20 bg-[#0a192f]/80 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-        <a href="/" className="flex items-center gap-2 md:gap-3 text-gray-400 hover:text-[var(--accent-cyan)] transition-colors font-mono tracking-widest text-xs md:text-sm font-bold">
-           <span className="text-xl leading-none">←</span> <span className="hidden sm:inline">RETURN TO PORTFOLIO</span><span className="sm:hidden">BACK</span>
-        </a>
-        <div className="flex items-center gap-2 md:gap-4">
-           <div className="w-2 h-2 bg-[var(--accent-cyan)] rounded-full animate-pulse shadow-[0_0_10px_var(--accent-cyan)]"></div>
-           <div className="text-[var(--accent-cyan)] font-black tracking-widest text-sm md:text-lg drop-shadow-[0_0_10px_rgba(100,255,218,0.5)]">
-              SYSTEM ADMINISTRATION
-           </div>
-        </div>
-      </header>
-
-      <div className="relative z-10 w-full flex-1 flex items-center justify-center p-3 md:p-10">
-        <AdminPanel />
-      </div>
-    </div>
   );
 }
 
@@ -344,9 +399,10 @@ function App() {
     <BrowserRouter>
       <LanguageProvider>
         <CustomCursor />
+        <ScrollToHash />
         <Routes>
-          <Route path="/" element={<PortfolioLayout />} />
-          <Route path="/admin" element={<AdminLayout />} />
+          <Route path="/" element={<SiteChrome><HomeLayout /></SiteChrome>} />
+          <Route path="/about" element={<SiteChrome><AboutPageLayout /></SiteChrome>} />
         </Routes>
       </LanguageProvider>
     </BrowserRouter>

@@ -21,7 +21,9 @@ Browser ──► uknowtechno.com (Cloudflare Pages, static React)
   in Cloudflare AI Gateway's stored provider keys (BYOK). The backend references them
   by NAME (`DEEPSEEK_KEY_REF` / `OPENAI_KEY_REF`).
 - The only cloud secret on this machine is `CF_AIG_TOKEN` (the AI Gateway auth token).
-- `ADMIN_DEV_TOKEN` must be EMPTY (unset) in production.
+- Admin auth is PocketBase-only, always. There is no dev-token admin bypass —
+  the local-dev-only bypass that briefly existed during development has been
+  removed from the codebase entirely (not just disabled).
 - Never echo/print `.env` contents into chat output.
 
 ## Prerequisites the owner already did (verify, don't redo)
@@ -82,9 +84,6 @@ POCKETBASE_ADMIN_COLLECTION=_superusers
 
 # CORS — production origin ONLY
 CORS_ALLOWED_ORIGINS=https://uknowtechno.com
-
-# PRODUCTION: leave dev token EMPTY (no letmein123!)
-ADMIN_DEV_TOKEN=
 ```
 
 Make sure `DEEPSEEK_API_KEY` / `OPENAI_API_KEY` do NOT appear in `.env`.

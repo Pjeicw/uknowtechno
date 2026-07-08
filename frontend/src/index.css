@@ -547,6 +547,11 @@
             opacity: 0;
             transform: translateY(50px);
             transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* Fixed nav bar is ~80-90px tall; without this offset, anchor
+               scrolls (nav links, footer links) land the section flush with
+               the viewport top and its heading/text sits hidden underneath
+               the nav. */
+            scroll-margin-top: 96px;
         }
         section.visible {
             opacity: 1;
@@ -568,6 +573,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* The fixed nav is visible immediately on load (scrollY is 0,
+               under the 50px threshold that keeps it shown) — scroll-margin
+               only helps *scrolling* to a section, not this first paint, so
+               the hero needs real top clearance or its eyebrow/headline
+               start out hidden underneath the nav bar. */
+            padding-top: 110px;
+        }
+        #synopsis {
+            /* Same fixed-nav-on-load issue as .hero, for the About page's
+               first section. */
+            padding-top: 110px;
         }
         .hero-3d {
             position: absolute;
@@ -580,6 +596,22 @@
         .hero-3d .fallback-content {
             text-align: center;
             color: var(--accent-cyan);
+        }
+        .hero-cube-logo {
+            width: 44px;
+            height: 44px;
+            filter: drop-shadow(0 0 10px rgba(100, 255, 218, 0.7));
+            animation: cube-logo-pulse 3.2s ease-in-out infinite;
+        }
+        @keyframes cube-logo-pulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 10px rgba(100, 255, 218, 0.7));
+            }
+            50% {
+                transform: scale(1.12);
+                filter: drop-shadow(0 0 18px rgba(100, 255, 218, 1));
+            }
         }
         .hero-content {
             position: relative;
@@ -1128,21 +1160,66 @@
                 display: flex; /* Show on mobile */
             }
             .nav-links {
-                display: none;
-                width: 100%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100dvh;
+                width: 78vw;
+                max-width: 300px;
+                display: flex;
                 flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-                padding-top: 1rem;
-                order: 3; /* Push below the logo and buttons */
+                align-items: flex-start;
+                justify-content: flex-start;
+                gap: 0.25rem;
+                text-align: left;
+                background: rgba(10, 25, 47, 0.98);
+                backdrop-filter: blur(18px);
+                border-right: 1px solid var(--glass-border);
+                box-shadow: 8px 0 40px rgba(0, 0, 0, 0.5);
+                padding: 5.5rem 1.5rem 2rem;
+                margin: 0;
+                list-style: none;
+                z-index: 2400; /* below .menu-toggle (2500), above page content */
+                transform: translateX(-105%);
+                transition: transform 0.3s ease;
+                overflow-y: auto;
             }
             .nav-menu.mobile-open .nav-links {
-                display: flex;
+                transform: translateX(0);
+            }
+            /* Backdrop behind the drawer — tap to close, and keeps the rest
+               of the page from feeling "covered" by an opaque full menu. */
+            .nav-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.55);
+                z-index: 2300;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+            .nav-backdrop.active {
+                opacity: 1;
+                pointer-events: auto;
             }
             .nav-links a {
-                font-size: 1.1rem;
-                padding: 0.8rem 0;
-                display: block;
+                font-size: 1.05rem;
+                padding: 0.9rem 0.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                width: 100%;
+                border-radius: 0.5rem;
+            }
+            .nav-links a:active,
+            .nav-links a:hover {
+                background: rgba(100, 255, 218, 0.08);
+            }
+            /* Long labels collapse to icon-only once the screen is quite
+               narrow, so nothing wraps or overflows the drawer. */
+            .nav-icon {
+                display: none;
+                flex-shrink: 0;
             }
             .theme-toggle, .lang-toggle {
                 padding: 0.4rem 0.8rem;
@@ -1202,6 +1279,11 @@
                 padding: 1rem;
                 min-height: 90vh;
             }
+            .hero, #synopsis {
+                /* Keep top clearance on mobile too — the 1rem reset above
+                   would otherwise re-expose the nav-covers-heading bug. */
+                padding-top: 90px;
+            }
             .hero-content {
                 padding: 2rem 0;
             }
@@ -1243,6 +1325,24 @@
                 width: 50px;
                 height: 50px;
                 font-size: 1.2rem;
+            }
+        }
+        @media (max-width: 400px) {
+            /* Very narrow screens: collapse nav labels to icon-only so
+               longer items (Services, Connect, About Me, etc.) never wrap
+               or overflow the drawer. */
+            .nav-icon {
+                display: inline-flex;
+            }
+            .nav-label {
+                display: none;
+            }
+            .nav-links {
+                width: 74vw;
+                max-width: 240px;
+            }
+            .nav-links a {
+                justify-content: center;
             }
         }
         @media (hover: none) {
@@ -1388,6 +1488,28 @@
             50% { transform: translateY(-5px); }
         }
         
+        .app-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.8rem;
+            border: 1px solid;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .app-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            box-shadow: 0 0 6px currentColor;
+        }
+        .uk-logo {
+            display: inline-block;
+        }
         .rocket-trail {
             position: fixed;
             width: 8px;

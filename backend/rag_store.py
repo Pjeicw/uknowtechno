@@ -189,6 +189,91 @@ def kb_id_for_code(con: sqlite3.Connection, code: str) -> Optional[str]:
     return row["id"] if row else None
 
 
+def slugify_topic(text: str) -> str:
+    """Turn a free-text topic/filename into a stable knowledge_base `code`.
+
+    Lowercases, strips the file extension, replaces anything that isn't
+    a-z0-9 with underscores, and collapses/trims repeats so re-uploading a
+    file with the same name lands back in the same auto-created topic.
+    """
+    import re as _re
+    base = text.rsplit(".", 1)[0] if "." in text else text
+    slug = _re.sub(r"[^a-z0-9]+", "_", base.strip().lower()).strip("_")
+    return slug[:60] or "general_customer"
+
+
+def get_or_create_kb(
+    con: sqlite3.Connection,
+    code: str,
+    name: Optional[str] = None,
+    visibility: str = "public",
+) -> str:
+    """Look up a knowledge base by `code`; auto-create it if it doesn't exist yet.
+
+    This is what lets uploads auto-sort into separate topics: each distinct
+    topic/filename slug becomes (or reuses) its own knowledge_base row instead
+    of everything piling into one default bucket.
+    """
+    existing = kb_id_for_code(con, code)
+    if existing:
+        return existing
+    kb_id = _gen_id("kb")
+    ts = _now()
+    display_name = name or code.replace("_", " ").replace("-", " ").title()
+    con.execute(
+        """INSERT INTO knowledge_bases
+           (id, code, name, description, visibility, is_enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, 1, ?, ?)""",
+        (kb_id, code, display_name, "Auto-created from an admin upload.", visibility, ts, ts),
+    )
+    con.commit()
+    return kb_id
+
+
+def list_all_kbs(con: sqlite3.Connection) -> List[Dict[str, str]]:
+    """Every knowledge base (topic), regardless of whether it has chunks yet.
+
+    Used by the admin panel to populate the topic picker so an admin can
+    reuse an existing topic instead of accidentally creating a near-duplicate.
+    """
+    rows = con.execute(
+        "SELECT code, name FROM knowledge_bases ORDER BY name"
+    ).fetchall()
+    return [{"code": r["code"], "label": r["name"]} for r in rows]
+
+
+def update_chunk_content(
+    con: sqlite3.Connection,
+    chunk_id: str,
+    content: Optional[str] = None,
+    section_title: Optional[str] = None,
+) -> Optional[int]:
+    """Edit an existing chunk's text/section title. Returns its rowid (so the
+    caller can re-embed) or None if the chunk doesn't exist.
+
+    Only fields that are not None are updated, so the panel can send just a
+    section-title tweak without resending the whole content.
+    """
+    row = con.execute(
+        "SELECT rowid FROM document_chunks WHERE id = ?", (chunk_id,)
+    ).fetchone()
+    if not row:
+        return None
+    rowid = row["rowid"]
+    if content is not None:
+        con.execute(
+            "UPDATE document_chunks SET content = ?, token_estimate = ? WHERE rowid = ?",
+            (content, max(1, len(content) // 4), rowid),
+        )
+    if section_title is not None:
+        con.execute(
+            "UPDATE document_chunks SET section_title = ? WHERE rowid = ?",
+            (section_title, rowid),
+        )
+    con.commit()
+    return rowid
+
+
 def list_knowledge_bases(
     con: sqlite3.Connection, allowed_levels: List[str]
 ) -> List[Dict[str, str]]:
